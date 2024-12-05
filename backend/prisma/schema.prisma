@@ -1,0 +1,114 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  name       String
+  email      String     @unique
+  password   String
+  role       String     // "ADMIN", "PEGAWAI", "SUPERADMIN"
+  createdAt  DateTime   @default(now())
+  no_hp String?
+  peminjaman Peminjaman[]
+  pengaduan  Pengaduan[]
+  Pelaksana Pelaksana[]
+}
+
+
+
+
+model KategoriBarang {
+  id       Int      @id @default(autoincrement())
+  kategori String?
+  barang   Barang[] // Relasi ke model Barang
+}
+
+
+
+model Barang {
+  id         Int              @id @default(autoincrement())
+  name       String
+  kategoriId Int              // Jenis barang
+  kondisi    String?
+  available   String?    // Ubah ke String jika ingin menggunakan "Ya" atau "Tidak"
+  lokasi     String?
+  createdAt  DateTime         @default(now())
+  peminjaman Peminjaman[]
+  photo      String?          // Field untuk menyimpan URL foto
+  kategori   KategoriBarang   @relation(fields: [kategoriId], references: [id])
+}
+model Peminjaman {
+  id         Int              @id @default(autoincrement())
+  userId     Int
+  barangId   Int
+  keperluan  String?
+  nama_kegiatan   String?
+  bukti_persetujuan String?          // Kolom untuk menyimpan URL atau path file bukti persetujuan
+  bukti_pengembalian String?          // Kolom untuk menyimpan URL atau path file bukti persetujuan
+  catatan String?          // Kolom untuk menyimpan URL atau path file bukti persetujuan
+  startDate  DateTime
+  endDate    DateTime
+  startTime  String           // Kolom untuk waktu mulai (misalnya "17:20")
+  endTime    String           // Kolom untuk waktu selesai (misalnya "17:20")
+  status     StatusPeminjaman @default(PENDING)
+  notifikasi String?
+  createdAt  DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id])
+  barang     Barang           @relation(fields: [barangId], references: [id])
+}
+
+model Pengaduan {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  date           DateTime         @default(now()) // Default ke tanggal saat ini
+  jam            String           // Kolom untuk menunjukkan jam saat ini (misalnya "17:20")
+  kategori       String?          // Field untuk menyimpan URL foto
+  photo          String?          // Field untuk menyimpan URL foto
+  lokasi          String?
+  catatan         String?
+  deskripsi      String?
+  notifikasi      String?
+  tanggapan      String?
+  status         StatusPengaduan  @default(PENDING)
+  createdAt      DateTime         @default(now())
+  pelaksana     Pelaksana[]
+  user           User             @relation(fields: [userId], references: [id])
+  
+}
+
+model Pelaksana {
+  id         Int        @id @default(autoincrement())
+  userId     Int
+  pengaduanId         Int
+  tgl_penugasan  DateTime         @default(now())
+  tgl_selesai    DateTime?
+  is_selesai  String?
+  user       User             @relation(fields: [userId], references: [id])
+  pengaduan     Pengaduan     @relation(fields: [pengaduanId], references: [id])
+
+}
+
+
+
+enum StatusPeminjaman {
+  PENDING
+  APPROVED
+  REJECTED
+  DIKEMBALIKAN
+  DIPINJAM
+}
+
+enum StatusPengaduan {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  ONPROGGRESS
+}
