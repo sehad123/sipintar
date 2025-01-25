@@ -99,7 +99,12 @@ const ProsedurPeminjaman = () => {
 
       if (!response.ok) {
         console.error("Error submitting form:", result);
-        toast.error(`Error: ${result.error}`); // Toast error
+        toast.error(`Error: ${result.error}`); // Menampilkan toast error
+
+        // Reload halaman setelah menampilkan error
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000); // Tunggu 3 detik sebelum reload agar user bisa melihat pesan error
       } else {
         // alert("Peminjaman berhasil diajukan!");
         toast.success("Peminjaman berhasil diajukan!");

@@ -221,7 +221,7 @@ export default function BarangList() {
             </thead>
             <tbody>
               {paginatedBarangList.map((barang) => (
-                <tr key={barang.id}>
+                <tr key={barang.id} className="text-center">
                   <td className="border px-4 py-2">{barang.name}</td>
                   <td className="border border-gray-300 px-6 py-3">{barang.photo ? <img src={`http://localhost:5000${barang.photo}`} alt={barang.name} className="mx-auto w-20 h-20 object-cover" /> : "No Image"}</td>
                   <td className="border px-4 py-2">{barang.kondisi}</td>

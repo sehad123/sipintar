@@ -10,7 +10,7 @@ export function Footer() {
           {/* About Us Section */}
           <div>
             <h2 className="text-lg font-semibold mb-2">About Us</h2>
-            <p className="text-sm">HALO STIS Merupakan sebuah layanan yang menyediakan sarana dan prasarana untuk pengaduan dan peminjaman </p>
+            <p className="text-sm">SiPintar Merupakan sebuah Sistem layanan Peminjaman Barang dan Temoat yang menyediakan sarana dan prasarana untuk melakukan peminjaman </p>
           </div>
 
           {/* Quick Links Section */}
@@ -22,21 +22,21 @@ export function Footer() {
                   Peminjaman
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a href="#" className="hover:underline">
                   Pengaduan
                 </a>
-              </li>
+              </li> */}
               <li>
                 <a href="#" className="hover:underline">
                   Riwayat Peminjaman
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a href="#" className="hover:underline">
                   Riwayat Pengaduan
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
 
@@ -44,7 +44,7 @@ export function Footer() {
           <div>
             <h2 className="text-lg font-semibold mb-2">Contact Us</h2>
             <p className="text-sm">
-              Email: bau@gmail.com
+              Email: bau@gmail.comP
               <br />
               Phone: +123-456-7890
             </p>
