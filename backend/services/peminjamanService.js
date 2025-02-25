@@ -5,19 +5,24 @@ const checkBarangAvailability = async (barangId, startDate, endDate) => {
   const conflicts = await prisma.peminjaman.findMany({
     where: {
       barangId,
-      AND: [{ startDate: { lte: new Date(endDate) } }, { endDate: { gte: new Date(startDate) } }],
+      AND: [
+        { startDate: { lte: new Date(endDate) } },
+        { endDate: { gte: new Date(startDate) } },
+        { status: "PENDING" }, // Hanya cek peminjaman yang statusnya bukan PENDING
+      ],
     },
     include: {
       barang: {
-        select: { name: true }, // Sertakan hanya nama barang
+        select: { name: true }, // Sertakan nama barang
       },
     },
   });
 
-  // Mengembalikan nama barang jika ada konflik
-  return conflicts.length === 0 ? null : conflicts[0].barang.name;
+  if (conflicts.length > 0) {
+    return conflicts[0].barang.name; // Kembalikan nama barang yang sedang dipinjam
+  }
+  return null; // Barang tersedia
 };
-
 const createPeminjaman = async ({ userId, barangId, startDate, endDate, startTime, endTime, keperluan, kategori, nama_kegiatan, bukti_persetujuan }) => {
   console.log("Menerima file bukti persetujuan:", bukti_persetujuan); // Debug log
 

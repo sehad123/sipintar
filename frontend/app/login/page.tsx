@@ -38,7 +38,7 @@ export default function Login() {
       // Periksa role user dan arahkan ke halaman yang sesuai
       setTimeout(() => {
         if (data.user.role === "Admin") {
-          router.push("/data-barang"); // Arahkan ke halaman data barang
+          router.push("/data-peminjaman"); // Arahkan ke halaman data barang
         } else {
           router.push("/peminjaman"); // Arahkan ke halaman peminjaman
         }

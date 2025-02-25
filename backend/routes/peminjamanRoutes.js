@@ -77,13 +77,15 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Cek ketersediaan barang
     for (const barangId of barangIds) {
       const barangName = await checkBarangAvailability(barangId, startDate, endDate);
       if (barangName) {
-        return res.status(400).json({ error: `Barang "${barangName}" sedang dipinjam atau tidak tersedia` });
+        return res.status(400).json({ error: `Barang "${barangName}" sudah diajukan pengguna lain` });
       }
     }
 
+    // Buat peminjaman
     const peminjamanPromises = barangIds.map((barangId) =>
       createPeminjaman({
         userId: parsedUserId,
@@ -105,7 +107,6 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
     res.status(500).json({ error: "An error occurred while creating peminjaman" });
   }
 });
-
 // Route to approve peminjaman
 router.put("/peminjaman/:id/approve", async (req, res) => {
   try {

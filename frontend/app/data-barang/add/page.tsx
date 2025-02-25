@@ -49,7 +49,7 @@ export default function AddBarangModal({ onClose, onSave }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Tambah Barang</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">Formulir Penambahan Barang</h2>
         <label className="block mb-2">Kategori</label>
         <select name="kategoriId" value={newBarang.kategoriId} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded">
           <option value="" disabled>

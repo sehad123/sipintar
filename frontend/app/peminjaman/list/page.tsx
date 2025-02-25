@@ -71,23 +71,16 @@ const ProsedurPeminjaman = () => {
   };
 
   const handleSubmit = async (formData) => {
-    // e.preventDefault();
-
-    // if (Object.values(validationErrors).some((error) => error)) {
-    //   return; // Exit if there are validation errors
-    // }
-
-    // Konversi data ke FormData untuk mengirim file
     const formDataToSend = new FormData();
-    formDataToSend.append("userId", formData.userId); // userId
-    formDataToSend.append("barangIds", JSON.stringify(formData.barangIds)); // barangIds (stringify array)
+    formDataToSend.append("userId", formData.userId);
+    formDataToSend.append("barangIds", JSON.stringify(formData.barangIds));
     formDataToSend.append("keperluan", formData.keperluan);
     formDataToSend.append("nama_kegiatan", formData.nama_kegiatan);
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
     formDataToSend.append("startTime", formData.startTime);
     formDataToSend.append("endTime", formData.endTime);
-    formDataToSend.append("bukti_persetujuan", formData.bukti_persetujuan); // file
+    formDataToSend.append("bukti_persetujuan", formData.bukti_persetujuan);
 
     try {
       const response = await fetch("http://localhost:5000/api/peminjaman", {
@@ -101,16 +94,13 @@ const ProsedurPeminjaman = () => {
         console.error("Error submitting form:", result);
         toast.error(`Error: ${result.error}`); // Menampilkan toast error
 
-        // Reload halaman setelah menampilkan error
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000); // Tunggu 3 detik sebelum reload agar user bisa melihat pesan error
+        // Hanya reset kolom barang/tempat (barangIds) jika error terkait barang yang sedang diajukan
+        if (result.error.includes("sudah diajukan pengguna lain")) {
+          formData.barangIds = []; // Reset barangIds
+        }
       } else {
-        // alert("Peminjaman berhasil diajukan!");
         toast.success("Peminjaman berhasil diajukan!");
-        // onClose(); // Close the modal after submission
 
-        // Menunda pengalihan halaman selama 1 detik (5000 ms)
         setTimeout(() => {
           window.location.href = "/riwayat-peminjaman"; // Navigasi ke route riwayat peminjaman
         }, 1000);

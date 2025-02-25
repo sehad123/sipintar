@@ -74,9 +74,15 @@ const getBarangById = async (id) =>
   });
 
 // Delete a barang
-const deleteBarang = async (id) =>
-  prisma.barang.delete({
-    where: { id: parseInt(id) },
+const deleteBarang = async (id) => {
+  // Hapus semua data yang terkait dengan barang ini terlebih dahulu
+  await prisma.peminjaman.deleteMany({
+    where: { barangId: parseInt(id) },
   });
 
+  // Setelah itu, baru hapus barang
+  return prisma.barang.delete({
+    where: { id: parseInt(id) },
+  });
+};
 module.exports = { addBarang, getAvailableBarang, getAllBarang, getBarangById, updateBarang, deleteBarang };

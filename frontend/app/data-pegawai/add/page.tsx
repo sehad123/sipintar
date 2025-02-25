@@ -11,7 +11,7 @@ function AddPegawaiModal({ onClose }) {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
 
-  const router = useRouter(); // Menginisialisasi router
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,12 +24,10 @@ function AddPegawaiModal({ onClose }) {
       });
 
       if (res.ok) {
-        const data = await res.json();
         toast.success("Registrasi akun berhasil!", {
           position: "top-right",
         });
 
-        // Alihkan ke halaman login setelah 3 detik
         setTimeout(() => {
           router.push("/login");
         }, 3000);
@@ -48,6 +46,10 @@ function AddPegawaiModal({ onClose }) {
     } catch (error) {
       toast.error("Terjadi kesalahan. Coba lagi.", { position: "top-right" });
     }
+  };
+
+  const handleCancel = () => {
+    router.push("/login");
   };
 
   return (
@@ -84,7 +86,7 @@ function AddPegawaiModal({ onClose }) {
             </select>
           </div>
           <div className="flex justify-end space-x-4">
-            <button type="button" onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded-md">
+            <button type="button" onClick={handleCancel} className="bg-gray-500 text-white px-4 py-2 rounded-md">
               Batal
             </button>
             <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md">

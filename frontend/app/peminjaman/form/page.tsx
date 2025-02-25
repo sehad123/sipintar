@@ -155,12 +155,6 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, onFileChange }) => {
 
     // Pastikan formData sudah mengandung userId yang diambil dari localStorage
     await onSubmit(formData); // Kirim formData dengan userId
-    // onClose(); // Close the modal after submission
-
-    // Menunda pengalihan halaman selama 5 detik (5000 ms)
-    // setTimeout(() => {
-    //   window.location.href = "/riwayat-peminjaman"; // Navigasi ke route riwayat peminjaman
-    // }, 1000);
   };
 
   if (!isOpen) return null;
@@ -240,9 +234,9 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, onFileChange }) => {
             {validationErrors.endTime && <p className="text-red-500 text-xs">{validationErrors.endTime}</p>}
           </div>
 
-          {user.role !== "Dosen" && (
+          {user.role !== "Dosen" && user.role !== "Alumni" && (
             <div className="mb-1">
-              <label className="block text-sm font-medium text-gray-700">Bukti Persetujuan:</label>
+              <label className="block text-sm font-medium text-gray-700">Bukti Persetujuan UPK:</label>
               <input type="file" name="bukti_persetujuan" className="mt-1 block w-full border border-gray-300 rounded-md p-2" onChange={(e) => setFormData((prev) => ({ ...prev, bukti_persetujuan: e.target.files[0] }))} required />
             </div>
           )}

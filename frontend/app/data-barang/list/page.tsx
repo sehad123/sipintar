@@ -134,7 +134,8 @@ export default function BarangList() {
         setBarangList((prevBarangList) => prevBarangList.filter((barang) => barang.id !== deletingBarang.id));
         toast.success("Penghapusan Barang berhasil!");
       } else {
-        toast.error("Penghapusan Barang gagal, coba lagi.");
+        const result = await res.json();
+        toast.error(`Error: ${result.error}`); // Tampilkan error dari backend
       }
     } catch (error) {
       console.error("Error deleting barang:", error.message);
