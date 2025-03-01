@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFile } from "@fortawesome/free-solid-svg-icons";
+import { faFile, faFileExcel } from "@fortawesome/free-solid-svg-icons";
 import CustomModal from "../../components/Modal";
+import * as XLSX from "xlsx"; // Import library xlsx
 
 const PeminjamanList = () => {
   const [peminjamanList, setPeminjamanList] = useState([]);
@@ -13,6 +14,8 @@ const PeminjamanList = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
+  const [startDatePengajuanFilter, setStartDatePengajuanFilter] = useState("");
+  const [endDatePengajuanFilter, setEndDatePengajuanFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [currentAction, setCurrentAction] = useState(null);
@@ -56,7 +59,6 @@ const PeminjamanList = () => {
     setCurrentId(null);
   };
 
-  // Handle accept action
   // Handle accept action with catatan
   const handleAccept = async (catatan) => {
     closeModal(); // Close modal first
@@ -120,8 +122,32 @@ const PeminjamanList = () => {
       });
     }
 
-    if (startDateFilter && endDateFilter) {
-      filtered = filtered.filter((item) => new Date(item.startDate) >= new Date(startDateFilter) && new Date(item.endDate) <= new Date(endDateFilter));
+    // Filter tanggal peminjaman
+    if (startDateFilter) {
+      filtered = filtered.filter((item) => {
+        const itemStartDate = new Date(item.startDate).toISOString().split("T")[0];
+        const filterStartDate = new Date(startDateFilter).toISOString().split("T")[0];
+        return itemStartDate === filterStartDate;
+      });
+    }
+
+    // Filter tanggal pengembalian
+    if (endDateFilter) {
+      filtered = filtered.filter((item) => {
+        const itemEndDate = new Date(item.endDate).toISOString().split("T")[0];
+        const filterEndDate = new Date(endDateFilter).toISOString().split("T")[0];
+        return itemEndDate === filterEndDate;
+      });
+    }
+
+    // Filter tanggal pengajuan
+    if (startDatePengajuanFilter && endDatePengajuanFilter) {
+      filtered = filtered.filter((item) => {
+        const itemCreatedAt = new Date(item.createdAt);
+        const startDate = new Date(startDatePengajuanFilter);
+        const endDate = new Date(endDatePengajuanFilter);
+        return itemCreatedAt >= startDate && itemCreatedAt <= endDate;
+      });
     }
 
     if (Array.isArray(filtered)) {
@@ -132,13 +158,121 @@ const PeminjamanList = () => {
     }
 
     setCurrentPage(1);
-  }, [statusFilter, searchTerm, startDateFilter, endDateFilter, peminjamanList]);
+  }, [statusFilter, searchTerm, startDateFilter, endDateFilter, startDatePengajuanFilter, endDatePengajuanFilter, peminjamanList]);
+  // Function to determine card background color based on status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-orange-100"; // Oren transparan
+      case "REJECTED":
+        return "bg-red-100"; // Merah transparan
+      case "APPROVED":
+        return "bg-green-100"; // Hijau transparan
+      case "DIKEMBALIKAN":
+        return "bg-blue-100"; // Biru transparan
+      default:
+        return "bg-white"; // Default putih
+    }
+  };
+
+  // Function to export data to Excel
+  const exportToExcel = () => {
+    // Format tanggal untuk nama file
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      return date
+        .toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+        .replace(/\//g, "-"); // Ganti slash dengan hyphen
+    };
+
+    const fileName = `peminjaman (${formatDate(startDatePengajuanFilter)} - ${formatDate(endDatePengajuanFilter)})`;
+
+    // Format data untuk Excel
+    const dataForExcel = filteredData.map((item) => ({
+      "Tanggal Pengajuan": new Date(item.createdAt).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }),
+      "Nama Barang": item.barang.name,
+      "Nama Peminjam": item.user.name,
+      Keperluan: item.keperluan,
+      Kegiatan: item.nama_kegiatan,
+      Peran: item.user.role,
+      "Tanggal Peminjaman": new Date(item.startDate).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }),
+      "Tanggal Pengembalian": new Date(item.endDate).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }),
+      Status: item.status === "APPROVED" ? "DIPINJAM" : item.status === "REJECTED" ? "DITOLAK" : item.status,
+    }));
+
+    // Hitung jumlah peminjaman berdasarkan status
+    const totalPeminjaman = filteredData.length;
+    const pendingCount = filteredData.filter((item) => item.status === "PENDING").length;
+    const rejectedCount = filteredData.filter((item) => item.status === "REJECTED").length;
+    const approvedCount = filteredData.filter((item) => item.status === "APPROVED").length;
+    const returnedCount = filteredData.filter((item) => item.status === "DIKEMBALIKAN").length;
+
+    // Tambahkan ringkasan ke dataForExcel
+    const summaryRow = {
+      "Tanggal Pengajuan": "Ringkasan",
+      "Nama Barang": "",
+      "Nama Peminjam": "",
+      Keperluan: "",
+      Kegiatan: "",
+      Peran: "",
+      "Tanggal Peminjaman": "",
+      "Tanggal Pengembalian": "",
+      Status: "",
+    };
+
+    const summaryData = [
+      { Ringkasan: "Total Peminjaman", Jumlah: totalPeminjaman },
+      { Ringkasan: "Pending", Jumlah: pendingCount },
+      { Ringkasan: "Ditolak", Jumlah: rejectedCount },
+      { Ringkasan: "Dipinjam", Jumlah: approvedCount },
+      { Ringkasan: "Dikembalikan", Jumlah: returnedCount },
+    ];
+
+    // Gabungkan data peminjaman dengan ringkasan
+    const combinedData = [...dataForExcel, summaryRow, ...summaryData];
+
+    // Buat worksheet
+    const worksheet = XLSX.utils.json_to_sheet(combinedData, { skipHeader: true });
+
+    // Tambahkan header secara manual
+    XLSX.utils.sheet_add_aoa(worksheet, [["Tanggal Pengajuan", "Nama Barang", "Nama Peminjam", "Keperluan", "Kegiatan", "Peran", "Tanggal Peminjaman", "Tanggal Pengembalian", "Status"]], { origin: "A1" });
+
+    // Buat workbook dan simpan file
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Peminjaman");
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  };
 
   const totalPages = Array.isArray(filteredData) ? Math.ceil(filteredData.length / itemsPerPage) : 0;
   const currentItems = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : [];
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">Daftar Peminjaman</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-center mx-auto">Daftar Peminjaman</h1>
+        {startDatePengajuanFilter && endDatePengajuanFilter && (
+          <button onClick={exportToExcel} className="bg-green-500 text-white px-4 py-2 rounded-md flex items-center">
+            <FontAwesomeIcon icon={faFileExcel} className="mr-2" />
+            Export to Excel
+          </button>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="bg-gray-100 p-4 mb-4 rounded-md shadow-md flex flex-col md:flex-row justify-between gap-10">
@@ -149,7 +283,7 @@ const PeminjamanList = () => {
             <select className="p-2 border rounded-md" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">Semua</option>
               <option value="APPROVED">DIPINJAM</option>
-              <option value="REJECTED">REJECTED</option>
+              <option value="REJECTED">DiTOLAK</option>
               <option value="PENDING">PENDING</option>
               <option value="DIKEMBALIKAN">DIKEMBALIKAN</option>
             </select>
@@ -173,13 +307,27 @@ const PeminjamanList = () => {
             <input type="date" className="p-2 border rounded-md" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} />
           </div>
         </div>
+
+        {/* Filter Tanggal Pengajuan */}
+        <div className="flex flex-col md:flex-row gap-10">
+          <div>
+            <label className="block mb-2 text-sm">Tanggal Pengajuan (Mulai):</label>
+            <input type="date" className="p-2 border rounded-md" value={startDatePengajuanFilter} onChange={(e) => setStartDatePengajuanFilter(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block mb-2 text-sm">Tanggal Pengajuan (Selesai):</label>
+            <input type="date" className="p-2 border rounded-md" value={endDatePengajuanFilter} onChange={(e) => setEndDatePengajuanFilter(e.target.value)} />
+          </div>
+        </div>
       </div>
 
+      {/* Tampilan Data */}
       <div className="bg-white shadow-md rounded-lg p-4">
         {currentItems.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {currentItems.map((peminjaman) => (
-              <div key={peminjaman.id} className="border rounded-lg p-4 shadow-md">
+              <div key={peminjaman.id} className={`${getStatusColor(peminjaman.status)} border rounded-lg p-4 shadow-md`}>
                 <h2 className="text-lg font-semibold mb-2 text-center">{peminjaman.barang.name}</h2>
                 <p className="text-sm mb-1">
                   <strong>Nama Peminjam:</strong> {peminjaman.user.name}
@@ -197,7 +345,9 @@ const PeminjamanList = () => {
                 <p className="text-sm mb-1">
                   <strong>Peran:</strong> {peminjaman.user.role}
                 </p>
-
+                <p className="text-sm mb-1">
+                  <strong>Nama Kegiatan:</strong> {peminjaman.nama_kegiatan}
+                </p>
                 <p className="text-sm mb-1">
                   <strong>Tanggal Peminjaman:</strong>{" "}
                   {new Date(peminjaman.startDate).toLocaleDateString("id-ID", {
@@ -217,9 +367,7 @@ const PeminjamanList = () => {
                 <p className="text-sm mb-1">
                   <strong>Waktu Kegiatan:</strong> {peminjaman.startTime} - {peminjaman.endTime}
                 </p>
-                <p className="text-sm mb-1">
-                  <strong>Nama Kegiatan:</strong> {peminjaman.nama_kegiatan}
-                </p>
+
                 <p className="text-sm mb-1">
                   <strong>Waktu Pengajuan:</strong>{" "}
                   {new Date(peminjaman.createdAt).toLocaleDateString("id-ID", {
@@ -233,7 +381,7 @@ const PeminjamanList = () => {
                     minute: "2-digit",
                   })}
                 </p>
-                <p className="text-sm mb-1">{peminjaman.status === "APPROVED" ? <strong>Status: DIPINJAM</strong> : <strong>Status: {peminjaman.status}</strong>}</p>
+                <p className="text-sm mb-1">{peminjaman.status === "APPROVED" ? <strong>Status: DIPINJAM</strong> : peminjaman.status === "REJECTED" ? <strong>Status: DITOLAK</strong> : <strong>Status: {peminjaman.status}</strong>}</p>
                 <p className="text-sm mb-1">
                   <strong>Catatan:</strong> {peminjaman.catatan ? peminjaman.catatan : ""}
                 </p>

@@ -9,15 +9,16 @@ import AddPegawaiModal from "../add/page"; // Import the new Add Modal
 
 export default function PegawaiList() {
   const [pegawaiUsers, setPegawaiUsers] = useState([]); // State for Pegawai users
+  const [filteredUsers, setFilteredUsers] = useState([]); // State for filtered users
   const [error, setError] = useState(null); // State for handling errors
   const [addingPegawai, setAddingPegawai] = useState(false); // State for showing Add Modal
   const [editingUser, setEditingUser] = useState(null); // State for the user being edited
   const [deletingUser, setDeletingUser] = useState(null); // State for the user being deleted
+  const [namaFilter, setNamaFilter] = useState(""); // State for nama filter
+  const [statusFilter, setStatusFilter] = useState(""); // State for status filter
+  const [currentPage, setCurrentPage] = useState(1); // State for current page
+  const [itemsPerPage] = useState(10); // Items per page
   const router = useRouter();
-
-  // const handleDetailTugas = (userId) => {
-  //   router.push(`/detail-tugas/${userId}`);
-  // };
 
   // Fetch Pegawai users when the component loads
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function PegawaiList() {
         }
         const data = await res.json();
         setPegawaiUsers(data);
+        setFilteredUsers(data); // Initialize filteredUsers with all users
       } catch (error) {
         console.error("Error fetching Pegawai users:", error.message);
         setError("Failed to fetch Pegawai users. Please try again later.");
@@ -37,6 +39,33 @@ export default function PegawaiList() {
 
     fetchPegawaiUsers();
   }, []);
+
+  // Apply filters whenever namaFilter or statusFilter changes
+  useEffect(() => {
+    let filtered = pegawaiUsers;
+
+    if (namaFilter) {
+      filtered = filtered.filter((user) => user.name.toLowerCase().includes(namaFilter.toLowerCase()));
+    }
+
+    if (statusFilter) {
+      filtered = filtered.filter((user) => user.role === statusFilter);
+    }
+
+    setFilteredUsers(filtered);
+    setCurrentPage(1); // Reset to the first page whenever filters change
+  }, [namaFilter, statusFilter, pegawaiUsers]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   // Handle adding new Pegawai
   const handleAddPegawai = () => {
@@ -146,6 +175,23 @@ export default function PegawaiList() {
         {/* Error message */}
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
+        {/* Filter Section */}
+        <div className="flex gap-4 mb-6">
+          <div className="flex-1">
+            <label className="block mb-2 text-sm font-medium text-gray-700">Filter Nama:</label>
+            <input type="text" className="w-full p-2 border border-gray-300 rounded-md" placeholder="Cari berdasarkan nama..." value={namaFilter} onChange={(e) => setNamaFilter(e.target.value)} />
+          </div>
+          <div className="flex-1">
+            <label className="block mb-2 text-sm font-medium text-gray-700">Filter Status:</label>
+            <select className="w-full p-2 border border-gray-300 rounded-md" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="">Semua</option>
+              <option value="Mahasiswa">Mahasiswa</option>
+              <option value="Alumni">Alumni</option>
+              <option value="Dosen">Dosen</option>
+            </select>
+          </div>
+        </div>
+
         {/* List of Pegawai users */}
         <table className="w-full table-auto bg-gray-100 border-collapse">
           <thead>
@@ -160,10 +206,10 @@ export default function PegawaiList() {
             </tr>
           </thead>
           <tbody>
-            {pegawaiUsers.length > 0 ? (
-              pegawaiUsers.map((user, index) => (
+            {currentItems.length > 0 ? (
+              currentItems.map((user, index) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition">
-                  <td className="border border-gray-300 px-4 py-2">{index + 1}</td> {/* Nomer Urut */}
+                  <td className="border border-gray-300 px-4 py-2">{indexOfFirstItem + index + 1}</td> {/* Nomer Urut */}
                   <td className="border border-gray-300 px-4 py-2">{user.name}</td>
                   <td className="border border-gray-300 px-4 py-2">{user.email}</td>
                   <td className="border border-gray-300 px-4 py-2">{user.no_hp}</td>
@@ -185,13 +231,26 @@ export default function PegawaiList() {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="text-center text-gray-600 py-4">
+                <td colSpan="5" className="text-center text-gray-600 py-4">
                   Tidak ada Pegawai yang terdaftar.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center mt-4">
+          <button className="px-4 py-2 bg-gray-200 rounded-md" disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>
+            Previous
+          </button>
+          <span>
+            Halaman {currentPage} dari {totalPages}
+          </span>
+          <button className="px-4 py-2 bg-gray-200 rounded-md" disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)}>
+            Next
+          </button>
+        </div>
       </div>
 
       {/* Add Pegawai Modal */}

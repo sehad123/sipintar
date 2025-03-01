@@ -85,4 +85,31 @@ const deleteBarang = async (id) => {
     where: { id: parseInt(id) },
   });
 };
-module.exports = { addBarang, getAvailableBarang, getAllBarang, getBarangById, updateBarang, deleteBarang };
+const getBarangByKategoriBarang = async () => {
+  return prisma.barang.findMany({
+    where: {
+      kategoriId: 1, // Filter by kategoriId = 1 (barang)
+    },
+    include: { kategori: true }, // Include kategori for more detailed response
+  });
+};
+
+const getBarangByKategoriTempat = async () => {
+  return prisma.barang.findMany({
+    where: {
+      kategoriId: 2, // Filter by kategoriId = 2 (tempat)
+    },
+    include: { kategori: true }, // Include kategori for more detailed response
+  });
+};
+
+module.exports = {
+  addBarang,
+  getAvailableBarang,
+  getAllBarang,
+  getBarangById,
+  updateBarang,
+  deleteBarang,
+  getBarangByKategoriBarang,
+  getBarangByKategoriTempat,
+};

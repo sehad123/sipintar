@@ -1,24 +1,26 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AddBarangModal({ onClose, onSave }) {
   const [newBarang, setNewBarang] = useState({
     name: "",
-    kategoriId: "", // Mengubah type menjadi kategoriId
+    kategoriId: "",
     kondisi: "",
     lokasi: "",
     available: "",
-    photo: null, // Add a new field for photo
+    photo: null,
   });
 
-  const [kategoriList, setKategoriList] = useState([]); // State untuk kategori
+  const [kategoriList, setKategoriList] = useState([]);
 
   useEffect(() => {
     const fetchKategori = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/kategori"); // Ganti dengan endpoint yang sesuai
+        const response = await fetch("http://localhost:5000/api/kategori");
         const data = await response.json();
-        setKategoriList(data); // Simpan data kategori di state
+        setKategoriList(data);
       } catch (error) {
         console.error("Failed to fetch kategori:", error);
       }
@@ -33,17 +35,37 @@ export default function AddBarangModal({ onClose, onSave }) {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0]; // Get the uploaded file
+    const file = e.target.files[0];
+
+    // Validasi tipe file
+    if (file && !file.type.startsWith("image/")) {
+      toast.error("File yang diupload harus berupa gambar.");
+      e.target.value = ""; // Reset input file
+      return;
+    }
+
+    // Validasi ukuran file (maksimal 2MB)
+    if (file && file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file tidak boleh lebih dari 2MB.");
+      e.target.value = ""; // Reset input file
+      return;
+    }
+
     setNewBarang((prevBarang) => ({ ...prevBarang, photo: file }));
   };
 
   const handleSave = () => {
+    // Validasi jika foto belum diupload
+    if (!newBarang.photo) {
+      toast.error("Harap upload foto barang.");
+      return;
+    }
+
     const formData = new FormData();
-    // Append all the fields to formData
     Object.keys(newBarang).forEach((key) => {
       formData.append(key, newBarang[key]);
     });
-    onSave(formData); // Call the onSave function passed as a prop
+    onSave(formData);
   };
 
   return (
@@ -85,7 +107,14 @@ export default function AddBarangModal({ onClose, onSave }) {
         </div>
         <div className="mb-4">
           <label className="block mb-2">Foto</label>
-          <input type="file" required name="photo" onChange={handleFileChange} className="w-full p-2 border border-gray-300 rounded" />
+          <input
+            type="file"
+            required
+            name="photo"
+            onChange={handleFileChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            accept="image/*" // Hanya menerima file gambar
+          />
         </div>
         <div className="flex justify-end">
           <button onClick={onClose} className="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2">

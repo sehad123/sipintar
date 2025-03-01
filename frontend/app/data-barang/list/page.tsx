@@ -22,6 +22,7 @@ export default function BarangList() {
   const [availabilityFilter, setAvailabilityFilter] = useState(""); // State for availability filter
   const [categoryFilter, setCategoryFilter] = useState(""); // State for category filter
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const [previewImage, setPreviewImage] = useState(null); // State for image preview
   const itemsPerPage = 5; // Items per page
 
   // Fetch barang and categories data
@@ -40,8 +41,11 @@ export default function BarangList() {
         const barangData = await barangRes.json();
         const categoriesData = await categoriesRes.json();
 
-        setBarangList(barangData);
-        setFilteredBarangList(barangData);
+        // Urutkan barang berdasarkan nama secara ascending
+        const sortedBarangData = barangData.sort((a, b) => a.name.localeCompare(b.name));
+
+        setBarangList(sortedBarangData);
+        setFilteredBarangList(sortedBarangData);
         setCategories(categoriesData); // Set categories data
       } catch (error) {
         console.error("Error fetching barang or categories:", error.message);
@@ -60,7 +64,11 @@ export default function BarangList() {
       .filter((barang) => barang.kondisi.toLowerCase().includes(searchKondisi.toLowerCase()))
       .filter((barang) => (availabilityFilter ? barang.available === availabilityFilter : true))
       .filter((barang) => (categoryFilter ? barang.kategoriId === parseInt(categoryFilter) : true));
-    setFilteredBarangList(filteredList);
+
+    // Urutkan hasil filter berdasarkan nama secara ascending
+    const sortedFilteredList = filteredList.sort((a, b) => a.name.localeCompare(b.name));
+
+    setFilteredBarangList(sortedFilteredList);
     setCurrentPage(1); // Reset to first page after filtering
   }, [searchName, searchKondisi, searchLokasi, availabilityFilter, categoryFilter, barangList]);
 
@@ -87,7 +95,7 @@ export default function BarangList() {
 
       if (res.ok) {
         const data = await res.json();
-        setBarangList((prevBarang) => [...prevBarang, data]); // Update state
+        setBarangList((prevBarang) => [...prevBarang, data].sort((a, b) => a.name.localeCompare(b.name))); // Update state dan urutkan
         toast.success("Penambahan Barang berhasil!"); // Tampilkan notifikasi
         handleCloseAddModal(); // Tutup modal
       } else {
@@ -109,7 +117,8 @@ export default function BarangList() {
 
       if (res.ok) {
         const data = await res.json();
-        setBarangList((prevBarangList) => prevBarangList.map((barang) => (barang.id === id ? data : barang))); // Update state
+        const updatedList = barangList.map((barang) => (barang.id === id ? data : barang)).sort((a, b) => a.name.localeCompare(b.name)); // Update state dan urutkan
+        setBarangList(updatedList);
         toast.success("Perubahan Barang berhasil!"); // Tampilkan notifikasi
         setEditingBarang(null); // Tutup modal
       } else {
@@ -131,7 +140,8 @@ export default function BarangList() {
       });
 
       if (res.ok) {
-        setBarangList((prevBarangList) => prevBarangList.filter((barang) => barang.id !== deletingBarang.id));
+        const updatedList = barangList.filter((barang) => barang.id !== deletingBarang.id).sort((a, b) => a.name.localeCompare(b.name)); // Update state dan urutkan
+        setBarangList(updatedList);
         toast.success("Penghapusan Barang berhasil!");
       } else {
         const result = await res.json();
@@ -144,6 +154,7 @@ export default function BarangList() {
       setDeletingBarang(null); // Close the delete modal
     }
   };
+
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
@@ -165,6 +176,14 @@ export default function BarangList() {
     setFilteredBarangList(barangList); // Reset to full list
   };
 
+  const handleImageClick = (imageUrl) => {
+    setPreviewImage(imageUrl);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewImage(null);
+  };
+
   const totalPages = Math.ceil(filteredBarangList.length / itemsPerPage);
 
   return (
@@ -173,8 +192,8 @@ export default function BarangList() {
 
       <div className="bg-white p-8 rounded-lg shadow-lg w-full">
         <h1 className="text-3xl font-bold text-center mb-6">Daftar Barang & Tempat</h1>
-        <div className="flex justify-end mb-4 -translate-y-16 ">
-          <button className="bg-blue-500 text-white p-3 rounded-md shadow-lg hover:bg-blue-600 transition duration-200" onClick={handleAddBarang}>
+        <div className="flex justify-end mb-4">
+          <button className="bg-blue-500 -mt-12 text-white p-3 rounded-md shadow-lg hover:bg-blue-600 transition duration-200" onClick={handleAddBarang}>
             <FontAwesomeIcon icon={faPlus} size="lg" />
           </button>
         </div>
@@ -182,55 +201,77 @@ export default function BarangList() {
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
         {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 -translate-y-10">
-          <input type="text" className="p-2 border rounded-md mb-2 md:mb-0 md:mr-4" placeholder="Cari berdasarkan nama" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
-          <input type="text" className="p-2 border rounded-md mb-2 md:mb-0 md:mr-4" placeholder="Cari berdasarkan Kondisi" value={searchKondisi} onChange={(e) => setSearchKondisi(e.target.value)} />
-          <input type="text" className="p-2 border rounded-md mb-2 md:mb-0 md:mr-4" placeholder="Cari berdasarkan Lokasi" value={searchLokasi} onChange={(e) => setSearchLokasi(e.target.value)} />
-
-          <select className="p-2 border rounded-md mb-2 md:mb-0 md:mr-4" value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value)}>
-            <option value="">Semua Ketersediaan</option>
-            <option value="Ya">Ya</option>
-            <option value="Tidak">Tidak</option>
-          </select>
-
-          {/* Update category filter to use category names */}
-          <select className="p-2 border rounded-md mb-2 md:mb-0 md:mr-4" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="">Semua Kategori</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.kategori}
-              </option>
-            ))}
-          </select>
-          <button className="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition duration-200" onClick={handleResetFilter}>
-            Reset Filter
-          </button>
+        <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Barang</label>
+              <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari nama..." value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kondisi</label>
+              <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari kondisi..." value={searchKondisi} onChange={(e) => setSearchKondisi(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
+              <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari lokasi..." value={searchLokasi} onChange={(e) => setSearchLokasi(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ketersediaan</label>
+              <select className="w-full p-2 border rounded-md" value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value)}>
+                <option value="">Semua</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+              <select className="w-full p-2 border rounded-md" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <option value="">Semua</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.kategori}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <button className="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition duration-200" onClick={handleResetFilter}>
+              Reset Filter
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto -translate-y-10">
-          <table className="table-auto w-full">
-            <thead>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="border px-4 py-2">Nama Barang</th>
-                <th className="border px-4 py-2">Foto</th>
-                <th className="border px-4 py-2">Kondisi</th>
-                <th className="border px-4 py-2">Lokasi</th>
-                <th className="border px-4 py-2">Kategori</th>
-                <th className="border px-4 py-2">Tersedia</th>
-                <th className="border px-4 py-2">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Barang</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kondisi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tersedia</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {paginatedBarangList.map((barang) => (
-                <tr key={barang.id} className="text-center">
-                  <td className="border px-4 py-2">{barang.name}</td>
-                  <td className="border border-gray-300 px-6 py-3">{barang.photo ? <img src={`http://localhost:5000${barang.photo}`} alt={barang.name} className="mx-auto w-20 h-20 object-cover" /> : "No Image"}</td>
-                  <td className="border px-4 py-2">{barang.kondisi}</td>
-                  <td className="border px-4 py-2">{barang.lokasi}</td>
-                  {/* Replace kategoriId with category name */}
-                  <td className="border px-4 py-2">{getCategoryName(barang.kategoriId)}</td>
-                  <td className="border px-4 py-2">{barang.available}</td>
-                  <td className="border px-4 py-2 flex items-center space-x-2 justify-center">
+                <tr key={barang.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4">{barang.name}</td>
+                  <td className="px-6 py-4">
+                    {barang.photo ? (
+                      <img src={`http://localhost:5000${barang.photo}`} alt={barang.name} className="w-16 h-16 object-cover rounded cursor-pointer" onClick={() => handleImageClick(`http://localhost:5000${barang.photo}`)} />
+                    ) : (
+                      "No Image"
+                    )}
+                  </td>
+                  <td className="px-6 py-4">{barang.kondisi}</td>
+                  <td className="px-6 py-4">{barang.lokasi}</td>
+                  <td className="px-6 py-4">{getCategoryName(barang.kategoriId)}</td>
+                  <td className="px-6 py-4">{barang.available}</td>
+                  <td className="px-6 py-4 flex space-x-2">
                     <button className="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600 transition duration-200" onClick={() => setEditingBarang(barang)}>
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
@@ -266,6 +307,15 @@ export default function BarangList() {
       {addingBarang && <AddBarangModal onSave={handleSaveBarang} onClose={handleCloseAddModal} />}
       {editingBarang && <EditBarangModal barang={editingBarang} onSave={handleSaveEditBarang} onClose={() => setEditingBarang(null)} />}
       {deletingBarang && <DeleteConfirmationModal show={!!deletingBarang} onClose={() => setDeletingBarang(null)} onConfirm={handleConfirmDelete} />}
+
+      {/* Modal for image preview */}
+      {previewImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={handleClosePreview}>
+          <div className="bg-white p-4 rounded-lg max-w-4xl max-h-full overflow-auto">
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-full" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

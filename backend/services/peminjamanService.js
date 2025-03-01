@@ -4,11 +4,11 @@ const prisma = new PrismaClient();
 const checkBarangAvailability = async (barangId, startDate, endDate) => {
   const conflicts = await prisma.peminjaman.findMany({
     where: {
-      barangId,
+      barangId: parseInt(barangId, 10), // Pastikan barangId bertipe integer
       AND: [
-        { startDate: { lte: new Date(endDate) } },
-        { endDate: { gte: new Date(startDate) } },
-        { status: "PENDING" }, // Hanya cek peminjaman yang statusnya bukan PENDING
+        { startDate: { lte: new Date(endDate) } }, // Peminjaman yang dimulai sebelum atau pada endDate
+        { endDate: { gte: new Date(startDate) } }, // Peminjaman yang berakhir setelah atau pada startDate
+        { status: "PENDING" }, // Hanya cek peminjaman dengan status PENDING
       ],
     },
     include: {
@@ -19,7 +19,12 @@ const checkBarangAvailability = async (barangId, startDate, endDate) => {
   });
 
   if (conflicts.length > 0) {
-    return conflicts[0].barang.name; // Kembalikan nama barang yang sedang dipinjam
+    // Kembalikan objek berisi nama barang dan tanggal peminjaman yang bertabrakan
+    return {
+      name: conflicts[0].barang.name,
+      startDate: conflicts[0].startDate,
+      endDate: conflicts[0].endDate,
+    };
   }
   return null; // Barang tersedia
 };

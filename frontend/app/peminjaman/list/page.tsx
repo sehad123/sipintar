@@ -37,7 +37,6 @@ const ProsedurPeminjaman = () => {
   }, []);
 
   useEffect(() => {
-    // Filter barang based on search input
     const filteredList = barangList.filter((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase()));
     setFilteredBarangList(filteredList);
     setCurrentPage(1);
@@ -92,17 +91,16 @@ const ProsedurPeminjaman = () => {
 
       if (!response.ok) {
         console.error("Error submitting form:", result);
-        toast.error(`Error: ${result.error}`); // Menampilkan toast error
+        toast.error(`Error: ${result.error}`);
 
-        // Hanya reset kolom barang/tempat (barangIds) jika error terkait barang yang sedang diajukan
         if (result.error.includes("sudah diajukan pengguna lain")) {
-          formData.barangIds = []; // Reset barangIds
+          formData.barangIds = [];
         }
       } else {
         toast.success("Peminjaman berhasil diajukan!");
 
         setTimeout(() => {
-          window.location.href = "/riwayat-peminjaman"; // Navigasi ke route riwayat peminjaman
+          window.location.href = "/riwayat-peminjaman";
         }, 1000);
       }
     } catch (error) {
@@ -110,43 +108,63 @@ const ProsedurPeminjaman = () => {
       console.error("Error submitting form:", error);
     }
   };
+
   const isBarangUnavailable = () => {
-    // Check if any barang in the filtered list is unavailable
     return searchName && filteredBarangList.some((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase()) && barang.available === "Tidak");
   };
+
+  // Komponen Roadmap Alur
+  const RoadmapStep = ({ number, children }) => (
+    <div className="flex items-start space-x-4">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">{number}</div>
+      <div>
+        <p className="text-gray-700">{children}</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col items-center p-6 bg-gray-100 min-h-screen">
       <ToastContainer />
 
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-semibold text-gray-800">Prosedur Peminjaman</h1>
+        <h1 className="text-4xl font-semibold text-gray-800 md:hidden">Prosedur Peminjaman</h1>
         <p className="text-gray-500">Pastikan membaca instruksi sebelum melakukan peminjaman</p>
       </header>
-      <section className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mb-6">
-        {user.role === "Mahasiswa" ? (
-          <ol className="list-decimal list-inside text-gray-700 space-y-4">
-            <li>
-              <span className="font-semibold">Mahasiswa</span> harus melakukan negosiasi terlebih dahulu melalui UPK.
-            </li>
-            <li>Setelah disetujui oleh UPK, isi formulir peminjaman dan unggah bukti persetujuan.</li>
-            <li>Peminjaman harus diajukan maksimal H-1 sebelum kegiatan.</li>
-            <li>Peminjaman hanya berlaku sampai pukul 18.00 WIB.</li>
-            <li>Untuk Peminjaman Ruangan harus di luar jam perkuliahan.</li>
-          </ol>
-        ) : (
-          <ol className="list-decimal list-inside text-gray-700 space-y-4">
-            <li>Peminjaman harus diajukan maksimal H-1 sebelum kegiatan.</li>
-            <li>Peminjaman hanya berlaku sampai pukul 18.00 WIB.</li>
-            <li>Untuk Peminjaman Ruangan harus di luar jam perkuliahan.</li>
-          </ol>
-        )}
+
+      {/* Tampilan Mobile: Roadmap Alur */}
+      <section className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mb-6 md:hidden">
+        <div className="space-y-8 relative">
+          {/* Garis vertikal */}
+          <div className="absolute left-4 top-0 h-full w-0.5 bg-gray-300"></div>
+
+          {user.role === "Mahasiswa" ? (
+            <>
+              <RoadmapStep number="1">Mahasiswa harus melakukan negosiasi terlebih dahulu melalui UPK.</RoadmapStep>
+              <RoadmapStep number="2">Mahasiswa harus melakukan perizinan dari BAAK untuk peminjaman kelas di jam perkuliahan.</RoadmapStep>
+              <RoadmapStep number="3">Setelah disetujui oleh UPK, isi formulir peminjaman dan unggah bukti persetujuan.</RoadmapStep>
+              <RoadmapStep number="4">Peminjaman harus diajukan maksimal H-1 sebelum kegiatan.</RoadmapStep>
+              <RoadmapStep number="5">Peminjaman hanya berlaku sampai pukul 18.00 WIB.</RoadmapStep>
+              <RoadmapStep number="6">Untuk peminjaman ruangan, harus di luar jam perkuliahan.</RoadmapStep>
+            </>
+          ) : (
+            <>
+              <RoadmapStep number="1">Peminjaman harus diajukan maksimal H-1 sebelum kegiatan.</RoadmapStep>
+              <RoadmapStep number="2">Peminjaman hanya berlaku sampai pukul 18.00 WIB.</RoadmapStep>
+              <RoadmapStep number="3">Untuk peminjaman ruangan, harus di luar jam perkuliahan.</RoadmapStep>
+            </>
+          )}
+        </div>
       </section>
 
-      <section className="w-full max-w-2xl mb-6">
-        <input type="text" placeholder="Cari nama barang atau tempat ..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="w-full p-3 border rounded-md shadow-sm" />
+      {/* Tampilan Desktop: Gambar Roadmap */}
+      <section className="bg-white p-6 rounded-lg shadow-lg w-full max-w-5xl h-[100px] -mt-20 hidden md:block">
+        <h1 className="text-4xl font-semibold text-gray-800 text-center ">Prosedur Peminjaman</h1>
+        <p className="text-gray-500 text-center">Pastikan membaca instruksi sebelum melakukan peminjaman</p>{" "}
+        <img src="/img/roadmap_peminjaman.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
       </section>
 
+      {/* Tabel Barang */}
       <section className="container mx-auto p-4 mb-8 w-full max-w-4xl">
         {searchName && isBarangUnavailable() ? (
           <p className="text-red-500 text-center mt-4">Barang saat ini sedang tidak tersedia</p>
@@ -162,7 +180,6 @@ const ProsedurPeminjaman = () => {
                     <th className="border p-4 text-left">Kondisi</th>
                     <th className="border p-4 text-left">Lokasi</th>
                     <th className="border p-4 text-left">Kategori</th>
-                    {/* <th className="border p-4 text-left">Tersedia</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -173,7 +190,6 @@ const ProsedurPeminjaman = () => {
                       <td className="border p-4">{barang.kondisi}</td>
                       <td className="border p-4">{barang.lokasi}</td>
                       <td className="border p-4">{getCategoryName(barang.kategoriId)}</td>
-                      {/* <td className="border p-4">{barang.available}</td> */}
                     </tr>
                   ))}
                 </tbody>
@@ -183,7 +199,8 @@ const ProsedurPeminjaman = () => {
         )}
       </section>
 
-      <button onClick={handleOpenModal} className="mt-4 bg-blue-500 text-white font-semibold py-2 px-6 rounded shadow hover:bg-blue-600 transition duration-200">
+      {/* Tombol Ajukan Peminjaman */}
+      <button onClick={handleOpenModal} className="-mt-10 md:mt-[350px]   bg-blue-500 text-white font-semibold py-2 px-6 rounded shadow hover:bg-blue-600 transition duration-200">
         Ajukan Peminjaman
       </button>
 

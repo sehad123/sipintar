@@ -66,7 +66,7 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
   }
 
   if (!userId || !barangIds || !Array.isArray(barangIds) || barangIds.length === 0) {
-    return res.status(400).json({ error: "User ID and at least one Barang ID are required" });
+    return res.status(400).json({ error: "Anda belum memilih barang yang ingin dipinjam" });
   }
 
   const parsedUserId = parseInt(userId, 10);
@@ -79,9 +79,11 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
 
     // Cek ketersediaan barang
     for (const barangId of barangIds) {
-      const barangName = await checkBarangAvailability(barangId, startDate, endDate);
-      if (barangName) {
-        return res.status(400).json({ error: `Barang "${barangName}" sudah diajukan pengguna lain` });
+      const barangAvailability = await checkBarangAvailability(barangId, startDate, endDate);
+      if (barangAvailability) {
+        return res.status(400).json({
+          error: `Barang "${barangAvailability.name}" sudah diajukan pengguna lain pada tanggal ${new Date(barangAvailability.startDate).toLocaleDateString()} hingga ${new Date(barangAvailability.endDate).toLocaleDateString()}.`,
+        });
       }
     }
 

@@ -48,7 +48,7 @@ const PeminjamanStatusCard = () => {
         <p style={styles.count}>{statusCounts.approved}</p>
       </div>
       <div style={{ ...styles.card, backgroundColor: "#f94144" }}>
-        <h3>Rejected</h3>
+        <h3>Ditolak</h3>
         <p style={styles.count}>{statusCounts.rejected}</p>
       </div>
       <div style={{ ...styles.card, backgroundColor: "#577590" }}>

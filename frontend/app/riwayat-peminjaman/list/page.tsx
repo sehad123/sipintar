@@ -17,31 +17,31 @@ const PeminjamanList = ({ userId }) => {
   const [statusFilter, setStatusFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  useEffect(() => {
-    const fetchPeminjaman = async () => {
-      try {
-        const response = await fetch(`http://localhost:5000/api/peminjaman/user/${userId}`);
-        const data = await response.json();
+  const itemsPerPage = 6;
 
-        // Pastikan data adalah array
-        if (Array.isArray(data)) {
-          setPeminjaman(data);
-          setFilteredPeminjaman(data); // Initialize filtered data
-        } else {
-          console.error("Unexpected API response format", data);
-          setPeminjaman([]);
-          setFilteredPeminjaman([]);
-        }
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
+  // Fungsi untuk mengambil data peminjaman
+  const fetchPeminjaman = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/peminjaman/user/${userId}`);
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setPeminjaman(data);
+        setFilteredPeminjaman(data);
+      } else {
+        console.error("Unexpected API response format", data);
+        setPeminjaman([]);
+        setFilteredPeminjaman([]);
       }
-    };
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPeminjaman();
   }, [userId]);
 
@@ -51,12 +51,21 @@ const PeminjamanList = ({ userId }) => {
   };
 
   const handleFileChange = (event) => {
-    setBuktiPengembalian(event.target.files[0]);
+    const file = event.target.files[0];
+
+    // Validasi ukuran file (maksimal 2MB)
+    if (file && file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file tidak boleh lebih dari 2MB.");
+      event.target.value = ""; // Reset input file
+      return;
+    }
+
+    setBuktiPengembalian(file);
   };
 
   const confirmReturn = async () => {
     if (!buktiPengembalian) {
-      toast.error("Please upload file sebagai bukti pengembalian.");
+      toast.error("Harap unggah file sebagai bukti pengembalian.");
       return;
     }
 
@@ -70,33 +79,37 @@ const PeminjamanList = ({ userId }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json(); // Dapatkan pesan error dari server
+        const errorData = await response.json();
         throw new Error(errorData.error || "Barang gagal dikembalikan");
       }
 
       const updatedItem = await response.json();
       toast.success("Barang Berhasil Dikembalikan!");
 
-      setPeminjaman((prevPeminjaman) => prevPeminjaman.map((item) => (item.id === selectedPeminjamanId ? { ...item, status: "DIKEMBALIKAN" } : item)));
+      // Refresh data peminjaman setelah submit
+      fetchPeminjaman();
+
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error dari server:", error); // Log error dari server
+      console.error("Error dari server:", error);
       toast.error(error.message);
     }
   };
 
-  // Filtering logic based on search, status, and dates
   useEffect(() => {
     const filtered = peminjaman.filter((item) => {
       const matchesSearch = item.barang.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter ? item.status === statusFilter : true;
-      const matchesStartDate = startDateFilter ? new Date(item.startDate) >= new Date(startDateFilter) : true;
-      const matchesEndDate = endDateFilter ? new Date(item.endDate) <= new Date(endDateFilter) : true;
+
+      // Filter tanggal peminjaman (sesuai tanggal yang dipilih)
+      const matchesStartDate = startDateFilter ? new Date(item.startDate).toISOString().split("T")[0] === new Date(startDateFilter).toISOString().split("T")[0] : true;
+
+      // Filter tanggal pengembalian (sesuai tanggal yang dipilih)
+      const matchesEndDate = endDateFilter ? new Date(item.endDate).toISOString().split("T")[0] === new Date(endDateFilter).toISOString().split("T")[0] : true;
 
       return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
     });
 
-    console.log("Filtered data:", filtered);
     setFilteredPeminjaman(filtered);
   }, [searchTerm, statusFilter, startDateFilter, endDateFilter, peminjaman]);
 
@@ -104,138 +117,120 @@ const PeminjamanList = ({ userId }) => {
     setCurrentPage((prevPage) => prevPage + direction);
   };
 
-  const hasApprovedStatus = filteredPeminjaman.some((item) => item.status === "APPROVED");
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-orange-100"; // Oren transparan
+      case "REJECTED":
+        return "bg-red-100"; // Merah transparan
+      case "APPROVED":
+        return "bg-green-100"; // Hijau transparan
+      case "DIKEMBALIKAN":
+        return "bg-blue-100"; // Biru transparan
+      default:
+        return "bg-white"; // Default putih
+    }
+  };
 
   const paginatedData = filteredPeminjaman.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(filteredPeminjaman.length / itemsPerPage);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="text-center py-4">Loading...</div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="text-center py-4 text-red-500">Error: {error}</div>;
   }
 
   return (
-    <div className="peminjaman-list p-6 bg-gray-100 mx-10 mt-5">
-      <h1 className="text-2xl font-bold mb-4 text-center">Daftar Peminjaman Anda</h1>
+    <div className="p-6 bg-gray-100">
+      <h1 className="text-2xl font-bold mb-6 text-center">Daftar Peminjaman Anda</h1>
 
-      {/* Search and Filters */}
-      <div className="filters mb-4 p-4 bg-gray-100 rounded-md flex gap-6 items-center">
-        <div className="flex flex-col w-1/6">
-          <label className="text-sm text-gray-600 mb-1">Status:</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border p-2 rounded">
-            <option value="">Semua</option>
-            <option value="APPROVED">Approved</option>
-            <option value="DIKEMBALIKAN">Dikembalikan</option>
-            <option value="PENDING">Pending</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
-        </div>
-
-        <div className="flex flex-col w-1/4">
-          <label className="text-sm text-gray-600 mb-1">Cari Barang atau Tempat:</label>
-          <input type="text" placeholder="Nama atau Kegiatan" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border p-2 rounded" />
-        </div>
-
-        <div className="flex flex-col w-1/6 ml-64">
-          <label className="text-sm text-gray-600 mb-1">Tanggal Peminjaman:</label>
-          <input type="date" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} className="border p-2 rounded" />
-        </div>
-
-        <div className="flex flex-col w-1/6">
-          <label className="text-sm text-gray-600 mb-1">Tanggal Pengembalian:</label>
-          <input type="date" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} className="border p-2 rounded" />
+      {/* Filter Section */}
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Status:</label>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full p-2 border rounded-md">
+              <option value="">Semua</option>
+              <option value="APPROVED">Disetujui</option>
+              <option value="DIKEMBALIKAN">Dikembalikan</option>
+              <option value="PENDING">Pending</option>
+              <option value="REJECTED">Ditolak</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cari Barang atau Tempat:</label>
+            <input type="text" placeholder="Nama atau Kegiatan" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2 border rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tanggal Peminjaman:</label>
+            <input type="date" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} className="w-full p-2 border rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tanggal Pengembalian:</label>
+            <input type="date" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} className="w-full p-2 border rounded-md" />
+          </div>
         </div>
       </div>
 
-      {/* Table of Peminjaman */}
+      {/* Card Grid */}
       {filteredPeminjaman.length === 0 ? (
-        <table className="min-w-full table-auto bg-white shadow-md rounded-lg">
-          <thead>
-            <tr className="bg-blue-500 text-white">
-              <th className="py-3 px-4 text-left">No</th>
-              <th className="py-3 px-4 text-left">Nama Barang</th>
-              <th className="py-3 px-4 text-left">Tanggal Peminjaman</th>
-              <th className="py-3 px-4 text-left">Tanggal Pengembalian</th>
-              <th className="py-3 px-4 text-left">Status</th>
-              <th className="py-3 px-4 text-left">Catatan</th>
-              <th className="py-3 px-4 text-left">Bukti Persetujuan</th>
-              <th className="py-3 px-4 text-left">Bukti Pengembalian</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan="8" className="text-center py-4 text-gray-500">
-                Tidak ada data peminjaman.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="text-center py-4 text-gray-500">Tidak ada data peminjaman.</div>
       ) : (
         <>
-          <table className="min-w-full table-auto bg-white shadow-md rounded-lg">
-            <thead>
-              <tr className="bg-blue-500 text-white">
-                <th className="py-3 px-4 text-left">No</th>
-                <th className="py-3 px-4 text-left">Nama Barang</th>
-                <th className="py-3 px-4 text-left">Tanggal Peminjaman</th>
-                <th className="py-3 px-4 text-left">Tanggal Pengembalian</th>
-                <th className="py-3 px-4 text-left">Status</th>
-                <th className="py-3 px-4 text-left">Catatan</th>
-                <th className="py-3 px-4 text-left">Bukti Persetujuan</th>
-                {hasApprovedStatus && <th className="py-3 px-4 text-left">Action</th>}
-                <th className="py-3 px-4 text-left">Bukti Pengembalian</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((item, index) => (
-                <tr key={item.id} className="border-b border-gray-200">
-                  <td className="py-2 px-4">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="py-2 px-4">{item.barang.name}</td>
-                  <td className="py-2 px-4">{new Date(item.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td>
-                  <td className="py-2 px-4">{new Date(item.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td>
-                  <td className="py-2 px-4">{item.status}</td>
-                  <td className="py-2 px-4">{item.catatan || ""}</td>
-                  <td className="py-2 px-4 pl-16">
-                    {item.bukti_persetujuan ? (
-                      <a href={`http://localhost:5000/uploads/${item.bukti_persetujuan}`} className="text-blue-500 underline" download>
-                        <FontAwesomeIcon icon={faFile} />
-                      </a>
-                    ) : (
-                      "No file"
-                    )}
-                  </td>
-                  {hasApprovedStatus && (
-                    <td className="py-2 px-1 pl-10">
-                      {item.status === "APPROVED" && (
-                        <button className="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition duration-200" onClick={() => handleReturn(item.id)}>
-                          Kembalikan
-                        </button>
-                      )}
-                    </td>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedData.map((item) => (
+              <div key={item.id} className={`${getStatusColor(item.status)} rounded-lg shadow-md p-4`}>
+                <h2 className="text-xl font-semibold mb-2">{item.barang.name}</h2>
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Tanggal Peminjaman:</span> {new Date(item.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                </div>
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Tanggal Pengembalian:</span> {new Date(item.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                </div>
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Status:</span> {item.status}
+                </div>
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Catatan:</span> {item.catatan || "Tidak ada catatan"}
+                </div>
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Bukti Persetujuan:</span>{" "}
+                  {item.bukti_persetujuan ? (
+                    <a href={`http://localhost:5000/uploads/${item.bukti_persetujuan}`} className="text-blue-500 underline" download>
+                      <FontAwesomeIcon icon={faFile} />
+                    </a>
+                  ) : (
+                    "Tidak ada file"
                   )}
-                  <td className="py-2 px-4  pl-16">
-                    {item.bukti_pengembalian ? (
-                      <a href={`http://localhost:5000/uploads/${item.bukti_pengembalian}`} className="text-blue-500 underline" download>
-                        <FontAwesomeIcon icon={faFile} />
-                      </a>
-                    ) : (
-                      "No file"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                </div>
+                {item.status === "APPROVED" && (
+                  <button onClick={() => handleReturn(item.id)} className="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition duration-200">
+                    Kembalikan
+                  </button>
+                )}
+                <div className="text-gray-600 mt-2">
+                  <span className="font-medium">Bukti Pengembalian:</span>{" "}
+                  {item.bukti_pengembalian ? (
+                    <a href={`http://localhost:5000/uploads/${item.bukti_pengembalian}`} className="text-blue-500 underline" download>
+                      <FontAwesomeIcon icon={faFile} />
+                    </a>
+                  ) : (
+                    "Tidak ada file"
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* Pagination Controls */}
-          <div className="flex justify-between mt-4">
+          <div className="flex justify-between mt-6">
             <button onClick={() => handlePageChange(-1)} disabled={currentPage === 1} className="bg-gray-500 text-white py-1 px-4 rounded disabled:opacity-50">
               Previous
             </button>
-            <span>
+            <span className="text-gray-700">
               Page {currentPage} of {totalPages}
             </span>
             <button onClick={() => handlePageChange(1)} disabled={currentPage === totalPages} className="bg-gray-500 text-white py-1 px-4 rounded disabled:opacity-50">
@@ -249,8 +244,8 @@ const PeminjamanList = ({ userId }) => {
 
       {/* Modal for file upload */}
       {isModalOpen && (
-        <div className="modal-overlay fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-          <div className="modal-content bg-white p-6 rounded shadow-lg">
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4">Konfirmasi Pengembalian</h2>
             <p>Apakah Anda yakin ingin mengembalikan barang ini?</p>
             <input type="file" onChange={handleFileChange} className="mt-4" />

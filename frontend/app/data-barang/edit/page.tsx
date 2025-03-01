@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Modal Component for Editing Barang
 export default function EditBarangModal({ barang, onClose, onSave }) {
   const [name, setName] = useState(barang.name);
-  const [kategoriId, setKategoriId] = useState(barang.kategoriId || ""); // Menyimpan ID kategori yang dipilih
+  const [kategoriId, setKategoriId] = useState(barang.kategoriId || "");
   const [kondisi, setKondisi] = useState(barang.kondisi || "");
   const [available, setAvailable] = useState(barang.available);
   const [lokasi, setLokasi] = useState(barang.lokasi || "");
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [kategoriList, setKategoriList] = useState([]); // Menyimpan daftar kategori
+  const [kategoriList, setKategoriList] = useState([]);
 
   // Mengambil data kategori dari API
   useEffect(() => {
@@ -27,6 +29,27 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
 
     fetchKategori();
   }, []);
+
+  // Validasi file gambar
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+
+    // Validasi tipe file
+    if (file && !file.type.startsWith("image/")) {
+      toast.error("File yang diupload harus berupa gambar.");
+      e.target.value = ""; // Reset input file
+      return;
+    }
+
+    // Validasi ukuran file (maksimal 2MB)
+    if (file && file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file tidak boleh lebih dari 2MB.");
+      e.target.value = ""; // Reset input file
+      return;
+    }
+
+    setPhoto(file);
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -96,7 +119,12 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
 
           <div>
             <label className="block text-sm font-medium">Photo</label>
-            <input type="file" onChange={(e) => setPhoto(e.target.files[0])} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500"
+              accept="image/*" // Hanya menerima file gambar
+            />
           </div>
         </div>
 
