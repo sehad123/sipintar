@@ -200,9 +200,9 @@ const PeminjamanList = () => {
       }),
       "Nama Barang": item.barang.name,
       "Nama Peminjam": item.user.name,
+      Peran: item.user.role,
       Keperluan: item.keperluan,
       Kegiatan: item.nama_kegiatan,
-      Peran: item.user.role,
       "Tanggal Peminjaman": new Date(item.startDate).toLocaleDateString("id-ID", {
         day: "2-digit",
         month: "long",
@@ -223,35 +223,31 @@ const PeminjamanList = () => {
     const approvedCount = filteredData.filter((item) => item.status === "APPROVED").length;
     const returnedCount = filteredData.filter((item) => item.status === "DIKEMBALIKAN").length;
 
-    // Tambahkan ringkasan ke dataForExcel
-    const summaryRow = {
-      "Tanggal Pengajuan": "Ringkasan",
-      "Nama Barang": "",
-      "Nama Peminjam": "",
-      Keperluan: "",
-      Kegiatan: "",
-      Peran: "",
-      "Tanggal Peminjaman": "",
-      "Tanggal Pengembalian": "",
-      Status: "",
-    };
+    // Buat worksheet dari data peminjaman
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
 
+    // Hitung jumlah baris data
+    const dataRowCount = dataForExcel.length;
+
+    // Tambahkan 3 baris kosong setelah data terakhir
+    for (let i = 0; i < 3; i++) {
+      XLSX.utils.sheet_add_aoa(worksheet, [["", "", "", "", "", "", "", "", ""]], { origin: -1 });
+    }
+
+    // Tambahkan ringkasan setelah baris kosong
     const summaryData = [
-      { Ringkasan: "Total Peminjaman", Jumlah: totalPeminjaman },
-      { Ringkasan: "Pending", Jumlah: pendingCount },
-      { Ringkasan: "Ditolak", Jumlah: rejectedCount },
-      { Ringkasan: "Dipinjam", Jumlah: approvedCount },
-      { Ringkasan: "Dikembalikan", Jumlah: returnedCount },
+      ["Ringkasan", "", "", "", "", "", "", "", ""],
+      ["Total Peminjaman", totalPeminjaman, "", "", "", "", "", "", ""],
+      ["Pending", pendingCount, "", "", "", "", "", "", ""],
+      ["Ditolak", rejectedCount, "", "", "", "", "", "", ""],
+      ["Dipinjam", approvedCount, "", "", "", "", "", "", ""],
+      ["Dikembalikan", returnedCount, "", "", "", "", "", "", ""],
     ];
 
-    // Gabungkan data peminjaman dengan ringkasan
-    const combinedData = [...dataForExcel, summaryRow, ...summaryData];
-
-    // Buat worksheet
-    const worksheet = XLSX.utils.json_to_sheet(combinedData, { skipHeader: true });
+    XLSX.utils.sheet_add_aoa(worksheet, summaryData, { origin: -1 });
 
     // Tambahkan header secara manual
-    XLSX.utils.sheet_add_aoa(worksheet, [["Tanggal Pengajuan", "Nama Barang", "Nama Peminjam", "Keperluan", "Kegiatan", "Peran", "Tanggal Peminjaman", "Tanggal Pengembalian", "Status"]], { origin: "A1" });
+    XLSX.utils.sheet_add_aoa(worksheet, [["Tanggal Pengajuan", "Nama Barang", "Nama Peminjam", "Peran", "Keperluan", "Kegiatan", "Tanggal Peminjaman", "Tanggal Pengembalian", "Status"]], { origin: "A1" });
 
     // Buat workbook dan simpan file
     const workbook = XLSX.utils.book_new();

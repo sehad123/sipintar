@@ -40,10 +40,6 @@ export function Navbar({ userId }) {
         const pendingData = await pendingResponse.json();
         setPendingCount(pendingData.pendingCount);
 
-        const belumResponse = await fetch("http://localhost:5000/api/pengaduan/pelaksana/belum");
-        const belumData = await belumResponse.json();
-        setBelumCount(belumData.pelaksanaBelum);
-
         const catatanResponse = await fetch(`http://localhost:5000/api/peminjaman/user/${userId}/count`);
         const catatanData = await catatanResponse.json();
         setCatatanCount(catatanData.count);

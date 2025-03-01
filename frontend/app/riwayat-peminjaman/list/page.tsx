@@ -193,34 +193,34 @@ const PeminjamanList = ({ userId }) => {
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Status:</span> {item.status}
                 </div>
-                <div className="text-gray-600 mb-2">
-                  <span className="font-medium">Catatan:</span> {item.catatan || "Tidak ada catatan"}
-                </div>
-                <div className="text-gray-600 mb-2">
-                  <span className="font-medium">Bukti Persetujuan:</span>{" "}
-                  {item.bukti_persetujuan ? (
+
+                {item.bukti_persetujuan && (
+                  <div className="text-gray-600 mb-2">
+                    <span className="font-medium">Bukti Persetujuan:</span>{" "}
                     <a href={`http://localhost:5000/uploads/${item.bukti_persetujuan}`} className="text-blue-500 underline" download>
                       <FontAwesomeIcon icon={faFile} />
                     </a>
-                  ) : (
-                    "Tidak ada file"
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {item.catatan && item.catatan.trim() !== "" && (
+                  <div className="text-gray-600 mb-2">
+                    <span className="font-medium">Catatan:</span> {item.catatan}
+                  </div>
+                )}
                 {item.status === "APPROVED" && (
                   <button onClick={() => handleReturn(item.id)} className="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition duration-200">
                     Kembalikan
                   </button>
                 )}
-                <div className="text-gray-600 mt-2">
-                  <span className="font-medium">Bukti Pengembalian:</span>{" "}
-                  {item.bukti_pengembalian ? (
+                {item.bukti_pengembalian && (
+                  <div className="text-gray-600 mt-2">
+                    <span className="font-medium">Bukti Pengembalian:</span>{" "}
                     <a href={`http://localhost:5000/uploads/${item.bukti_pengembalian}`} className="text-blue-500 underline" download>
                       <FontAwesomeIcon icon={faFile} />
                     </a>
-                  ) : (
-                    "Tidak ada file"
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

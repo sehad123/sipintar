@@ -17,8 +17,6 @@ model User {
   createdAt  DateTime   @default(now())
   no_hp String?
   peminjaman Peminjaman[]
-  pengaduan  Pengaduan[]
-  Pelaksana Pelaksana[]
 }
 
 
@@ -64,36 +62,7 @@ model Peminjaman {
   barang     Barang           @relation(fields: [barangId], references: [id])
 }
 
-model Pengaduan {
-  id             Int              @id @default(autoincrement())
-  userId         Int
-  date           DateTime         @default(now()) // Default ke tanggal saat ini
-  jam            String           // Kolom untuk menunjukkan jam saat ini (misalnya "17:20")
-  kategori       String?          // Field untuk menyimpan URL foto
-  photo          String?          // Field untuk menyimpan URL foto
-  lokasi          String?
-  catatan         String?
-  deskripsi      String?
-  notifikasi      String?
-  tanggapan      String?
-  status         StatusPengaduan  @default(PENDING)
-  createdAt      DateTime         @default(now())
-  pelaksana     Pelaksana[]
-  user           User             @relation(fields: [userId], references: [id])
-  
-}
 
-model Pelaksana {
-  id         Int        @id @default(autoincrement())
-  userId     Int
-  pengaduanId         Int
-  tgl_penugasan  DateTime         @default(now())
-  tgl_selesai    DateTime?
-  is_selesai  String?
-  user       User             @relation(fields: [userId], references: [id])
-  pengaduan     Pengaduan     @relation(fields: [pengaduanId], references: [id])
-
-}
 
 
 
@@ -105,10 +74,4 @@ enum StatusPeminjaman {
   DIPINJAM
 }
 
-enum StatusPengaduan {
-  PENDING
-  APPROVED
-  REJECTED
-  COMPLETED
-  ONPROGGRESS
-}
+
