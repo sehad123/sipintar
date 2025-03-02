@@ -73,7 +73,13 @@ const PeminjamanList = () => {
 
       if (response.ok) {
         toast.success("Peminjaman Diterima!");
+
         setPeminjamanList((prevList) => prevList.map((item) => (item.id === currentId ? { ...item, status: "APPROVED" } : item)));
+
+        // Tunggu sebentar agar toast bisa ditampilkan sebelum reload
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Delay 2 detik agar user bisa melihat notifikasi
       } else {
         toast.error("Failed to approve peminjaman.");
       }
@@ -98,6 +104,9 @@ const PeminjamanList = () => {
       if (response.ok) {
         toast.success("Peminjaman Ditolak!");
         setPeminjamanList((prevList) => prevList.map((item) => (item.id === currentId ? { ...item, status: "REJECTED" } : item)));
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         toast.error("Failed to reject peminjaman.");
       }

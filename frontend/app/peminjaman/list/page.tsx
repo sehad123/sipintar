@@ -161,7 +161,15 @@ const ProsedurPeminjaman = () => {
       <section className="bg-white p-6 rounded-lg shadow-lg w-full max-w-5xl h-[100px] -mt-20 hidden md:block">
         <h1 className="text-4xl font-semibold text-gray-800 text-center ">Prosedur Peminjaman</h1>
         <p className="text-gray-500 text-center">Pastikan membaca instruksi sebelum melakukan peminjaman</p>{" "}
-        <img src="/img/roadmap_peminjaman.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
+        {user.role === "Mahasiswa" ? (
+          <>
+            <img src="/img/roadmap_peminjaman.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
+          </>
+        ) : (
+          <>
+            <img src="/img/roadmap_dosen.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
+          </>
+        )}
       </section>
 
       {/* Tabel Barang */}

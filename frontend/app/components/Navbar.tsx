@@ -1,22 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDashboard, faTable, faTasks, faUsers, faClipboardList, faUserCircle, faHandHolding, faExclamationTriangle, faHistory, faBell, faTimes, faSchool, faList, faBuilding, faBars } from "@fortawesome/free-solid-svg-icons";
+import { faTable, faUsers, faClipboardList, faUserCircle, faHandHolding, faHistory, faBell, faTimes, faList, faBuilding, faBars } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-export function Navbar({ userId }) {
+export function Navbar({}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [user, setUser] = useState({ name: "", role: "", email: "", id: "" });
   const [pendingCount, setPendingCount] = useState(0);
-  const [belumCount, setBelumCount] = useState(0);
-  const [pendingPengaduanCount, setPendingPengaduanCount] = useState(0);
   const [catatanCount, setCatatanCount] = useState(0);
-  const [catatanPengaduanCount, setCatatanPengaduanCount] = useState(0);
   const [notificationItems, setNotificationItems] = useState([]);
-  const [notificationPengaduanItems, setNotificationPengaduanItems] = useState([]);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -157,7 +153,7 @@ export function Navbar({ userId }) {
             {user.role !== "Admin" && (
               <button onClick={toggleNotification} className="text-gray-300 hover:text-white focus:outline-none relative">
                 <FontAwesomeIcon icon={faBell} />
-                {catatanCount + catatanPengaduanCount > 0 && <span className="absolute top-0 right-0 mt-[-4px] mr-[-6px] bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{catatanCount + catatanPengaduanCount}</span>}
+                {catatanCount > 0 && <span className="absolute top-0 right-0 mt-[-4px] mr-[-6px] bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{catatanCount}</span>}
               </button>
             )}
 
