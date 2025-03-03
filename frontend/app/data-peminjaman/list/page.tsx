@@ -333,7 +333,10 @@ const PeminjamanList = () => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {currentItems.map((peminjaman) => (
               <div key={peminjaman.id} className={`${getStatusColor(peminjaman.status)} border rounded-lg p-4 shadow-md`}>
-                <h2 className="text-lg font-semibold mb-2 text-center">{peminjaman.barang.name}</h2>
+                <h2 className="text-lg font-semibold mb-2 text-center">
+                  {peminjaman.barang.name} {peminjaman.barang.kategoriId === 1 && `( jumlah : ${peminjaman.jumlahBarang} )`}
+                </h2>
+
                 <p className="text-sm mb-1">
                   <strong>Nama Peminjam:</strong> {peminjaman.user.name}
                 </p>

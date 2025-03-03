@@ -183,7 +183,15 @@ const PeminjamanList = ({ userId }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedData.map((item) => (
               <div key={item.id} className={`${getStatusColor(item.status)} rounded-lg shadow-md p-4`}>
-                <h2 className="text-xl font-semibold mb-2">{item.barang.name}</h2>
+                <h2 className="text-xl font-semibold mb-2 text-center">{item.barang.name}</h2>
+                {item.barang.kategoriId === 1 ? (
+                  <div className="text-gray-600 mb-2">
+                    <span className="font-medium">Jumlah:</span> {item.jumlahBarang}
+                  </div>
+                ) : (
+                  <div className="text-gray-600 mb-2"></div>
+                )}
+
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Tanggal Peminjaman:</span> {new Date(item.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                 </div>
@@ -193,7 +201,6 @@ const PeminjamanList = ({ userId }) => {
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Status:</span> {item.status}
                 </div>
-
                 {item.bukti_persetujuan && (
                   <div className="text-gray-600 mb-2">
                     <span className="font-medium">Bukti Persetujuan:</span>{" "}
@@ -202,7 +209,6 @@ const PeminjamanList = ({ userId }) => {
                     </a>
                   </div>
                 )}
-
                 {item.catatan && item.catatan.trim() !== "" && (
                   <div className="text-gray-600 mb-2">
                     <span className="font-medium">Catatan:</span> {item.catatan}

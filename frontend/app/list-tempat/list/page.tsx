@@ -3,7 +3,6 @@ import PeminjamanFormModal from "@/app/peminjaman/form/page";
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useRouter } from "next/navigation"; // Import useRouter untuk navigasi
 
 export default function ListTempat() {
   const [barangList, setBarangList] = useState([]);
@@ -17,8 +16,7 @@ export default function ListTempat() {
   const [searchLokasi, setSearchLokasi] = useState(""); // State for search input
   const [availabilityFilter, setAvailabilityFilter] = useState(""); // State for availability filter
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
-  const itemsPerPage = 6; // Items per page
-  const router = useRouter(); // Inisialisasi useRouter
+  const itemsPerPage = 12; // Items per page
 
   // Fungsi untuk membuka modal dan menyimpan barang yang dipilih
   const handleOpenModal = (barang) => {
@@ -75,10 +73,6 @@ export default function ListTempat() {
   const paginatedBarangList = filteredBarangList.slice(firstIndex, lastIndex);
 
   // Get category name by ID
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.kategori : "Unknown"; // Fallback if category is not found
-  };
 
   // Fungsi untuk navigasi halaman berikutnya
   const handleNextPage = () => {
@@ -115,6 +109,7 @@ export default function ListTempat() {
     formDataToSend.append("startTime", formData.startTime);
     formDataToSend.append("endTime", formData.endTime);
     formDataToSend.append("bukti_persetujuan", formData.bukti_persetujuan);
+    formDataToSend.append("jumlahBarang", formData.jumlahBarang);
 
     try {
       const response = await fetch("http://localhost:5000/api/peminjaman", {
@@ -182,12 +177,7 @@ export default function ListTempat() {
               {/* Detail Barang */}
               <div className="p-4">
                 <h2 className="text-xl font-semibold mb-2 text-center">{barang.name}</h2>
-                <div className="text-gray-600 mb-2">
-                  <span className="font-medium">Kondisi:</span> {barang.kondisi}
-                </div>
-                <div className="text-gray-600 mb-2">
-                  <span className="font-medium">Lokasi:</span> {barang.lokasi}
-                </div>
+
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Tersedia:</span> {barang.available}
                 </div>

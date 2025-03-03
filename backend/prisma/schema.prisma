@@ -22,25 +22,26 @@ model User {
 
 
 
-model KategoriBarang {
+model KategoriAset {
   id       Int      @id @default(autoincrement())
   kategori String?
-  barang   Barang[] // Relasi ke model Barang
+  barang   Aset[] // Relasi ke model Barang
 }
 
 
 
-model Barang {
+model Aset {
   id         Int              @id @default(autoincrement())
   name       String
   kategoriId Int              // Jenis barang
+  jumlah Int?              // Jenis barang
   kondisi    String?
   available   String?    // Ubah ke String jika ingin menggunakan "Ya" atau "Tidak"
   lokasi     String?
   createdAt  DateTime         @default(now())
   peminjaman Peminjaman[]
   photo      String?          // Field untuk menyimpan URL foto
-  kategori   KategoriBarang   @relation(fields: [kategoriId], references: [id])
+  kategori   KategoriAset   @relation(fields: [kategoriId], references: [id])
 }
 model Peminjaman {
   id         Int              @id @default(autoincrement())
@@ -53,13 +54,14 @@ model Peminjaman {
   catatan String?          // Kolom untuk menyimpan URL atau path file bukti persetujuan
   startDate  DateTime
   endDate    DateTime
-  startTime  String           // Kolom untuk waktu mulai (misalnya "17:20")
-  endTime    String           // Kolom untuk waktu selesai (misalnya "17:20")
+  startTime  String?           // Kolom untuk waktu mulai (misalnya "17:20")
+  endTime    String?          // Kolom untuk waktu selesai (misalnya "17:20")
   status     StatusPeminjaman @default(PENDING)
   notifikasi String?
   createdAt  DateTime         @default(now())
+  jumlahBarang Int?
   user       User             @relation(fields: [userId], references: [id])
-  barang     Barang           @relation(fields: [barangId], references: [id])
+  barang     Aset           @relation(fields: [barangId], references: [id])
 }
 
 

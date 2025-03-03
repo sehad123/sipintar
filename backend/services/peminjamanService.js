@@ -2,35 +2,65 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 const checkBarangAvailability = async (barangId, startDate, endDate) => {
-  const conflicts = await prisma.peminjaman.findMany({
-    where: {
-      barangId: parseInt(barangId, 10), // Pastikan barangId bertipe integer
-      AND: [
-        { startDate: { lte: new Date(endDate) } }, // Peminjaman yang dimulai sebelum atau pada endDate
-        { endDate: { gte: new Date(startDate) } }, // Peminjaman yang berakhir setelah atau pada startDate
-        { status: "PENDING" }, // Hanya cek peminjaman dengan status PENDING
-      ],
-    },
-    include: {
-      barang: {
-        select: { name: true }, // Sertakan nama barang
-      },
-    },
+  const barang = await prisma.aset.findUnique({
+    where: { id: parseInt(barangId, 10) },
+    select: { kategoriId: true, jumlah: true, name: true }, // Ambil kategoriId dan jumlah
   });
 
-  if (conflicts.length > 0) {
-    // Kembalikan objek berisi nama barang dan tanggal peminjaman yang bertabrakan
-    return {
-      name: conflicts[0].barang.name,
-      startDate: conflicts[0].startDate,
-      endDate: conflicts[0].endDate,
-    };
+  if (!barang) {
+    throw new Error("Barang tidak ditemukan");
   }
+
+  // Jika kategori adalah "tempat" (kategoriId = 2), cek konflik peminjaman
+  if (barang.kategoriId === 2) {
+    const conflicts = await prisma.peminjaman.findMany({
+      where: {
+        barangId: parseInt(barangId, 10),
+        AND: [{ startDate: { lte: new Date(endDate) } }, { endDate: { gte: new Date(startDate) } }, { status: { in: ["PENDING", "APPROVED"] } }],
+      },
+      include: {
+        barang: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (conflicts.length > 0) {
+      return {
+        name: conflicts[0].barang.name,
+        startDate: conflicts[0].startDate,
+        endDate: conflicts[0].endDate,
+      };
+    }
+  }
+
+  // Jika kategori adalah "barang" (kategoriId = 1), cek stok
+  if (barang.kategoriId === 1 && barang.jumlah <= 0) {
+    throw new Error(`Stok barang "${barang.name}" tidak tersedia.`);
+  }
+
   return null; // Barang tersedia
 };
-const createPeminjaman = async ({ userId, barangId, startDate, endDate, startTime, endTime, keperluan, kategori, nama_kegiatan, bukti_persetujuan }) => {
-  console.log("Menerima file bukti persetujuan:", bukti_persetujuan); // Debug log
+const createPeminjaman = async ({ userId, barangId, startDate, endDate, startTime, endTime, keperluan, nama_kegiatan, bukti_persetujuan, jumlahBarang }) => {
+  const barang = await prisma.aset.findUnique({ where: { id: parseInt(barangId, 10) } });
+  if (!barang) {
+    throw new Error("Barang tidak ditemukan");
+  }
 
+  // Jika kategori barang (kategoriId = 1), cek stok
+  if (barang.kategoriId === 1) {
+    if (barang.jumlah < jumlahBarang) {
+      throw new Error(`Jumlah barang yang dipinjam melebihi stok yang tersedia (${barang.jumlah})`);
+    }
+
+    // Update jumlah barang di database
+    await prisma.aset.update({
+      where: { id: parseInt(barangId, 10) },
+      data: { jumlah: barang.jumlah - jumlahBarang },
+    });
+  }
+
+  // Buat peminjaman
   const peminjaman = await prisma.peminjaman.create({
     data: {
       userId,
@@ -40,19 +70,15 @@ const createPeminjaman = async ({ userId, barangId, startDate, endDate, startTim
       startTime,
       endTime,
       keperluan,
-      kategori,
       nama_kegiatan,
-      bukti_pengembalian: "",
-      catatan: "",
-      notifikasi: "",
+      bukti_persetujuan,
       status: "PENDING",
-      bukti_persetujuan, // Path file yang diunggah
+      jumlahBarang,
     },
   });
 
   return peminjaman;
 };
-
 const approvePeminjaman = async (id, catatan) => {
   // Mulai transaksi agar update peminjaman dan barang terjadi bersamaan
   const transaction = await prisma.$transaction(async (prisma) => {
@@ -66,28 +92,88 @@ const approvePeminjaman = async (id, catatan) => {
       throw new Error("Peminjaman tidak ditemukan");
     }
 
-    // Update barang yang dipinjam, set kolom 'available' menjadi 'Tidak'
-    await prisma.barang.update({
-      where: { id: peminjaman.barangId },
-      data: { available: "Tidak" },
-    });
+    // Update barang yang dipinjam, set kolom 'available' menjadi 'Tidak' jika stok 0
+    const barang = await prisma.aset.findUnique({ where: { id: peminjaman.barangId } });
+    if (barang.kategoriId === 1 && barang.jumlah === 0) {
+      // Ganti "1" dengan ID kategori barang
+      await prisma.aset.update({
+        where: { id: peminjaman.barangId },
+        data: { available: "Tidak" },
+      });
+    }
 
     return peminjaman;
   });
 
   return transaction;
 };
-const rejectPeminjaman = async (id, catatan) => {
-  const peminjaman = await prisma.peminjaman.update({
-    where: { id },
-    data: { status: "REJECTED", catatan: catatan, notifikasi: "Ya" },
-  });
 
-  if (!peminjaman) {
-    throw new Error("Peminjaman tidak ditemukan");
+const returnBarang = async (id, buktiPengembalian) => {
+  try {
+    const peminjaman = await prisma.peminjaman.findUnique({ where: { id } });
+    if (!peminjaman) {
+      throw new Error("Peminjaman tidak ditemukan");
+    }
+
+    // Tambahkan kembali jumlah barang yang dipinjam hanya untuk kategori barang
+    const barang = await prisma.aset.findUnique({ where: { id: peminjaman.barangId } });
+    if (barang.kategoriId === 1) {
+      // Ganti "1" dengan ID kategori barang
+      await prisma.aset.update({
+        where: { id: peminjaman.barangId },
+        data: { jumlah: { increment: peminjaman.jumlahBarang } },
+      });
+    }
+
+    // Update status peminjaman
+    const updatedPeminjaman = await prisma.peminjaman.update({
+      where: { id },
+      data: {
+        status: "DIKEMBALIKAN",
+        bukti_pengembalian: buktiPengembalian,
+      },
+    });
+
+    return updatedPeminjaman;
+  } catch (error) {
+    console.error("Error di returnBarang:", error);
+    throw new Error("Gagal mengembalikan barang: " + error.message);
   }
+};
 
-  return peminjaman;
+const rejectPeminjaman = async (id, catatan) => {
+  try {
+    // Mulai transaksi agar update peminjaman dan barang terjadi bersamaan
+    const transaction = await prisma.$transaction(async (prisma) => {
+      // Update status peminjaman menjadi "REJECTED"
+      const peminjaman = await prisma.peminjaman.update({
+        where: { id },
+        data: { status: "REJECTED", catatan: catatan, notifikasi: "Ya" },
+      });
+
+      if (!peminjaman) {
+        throw new Error("Peminjaman tidak ditemukan");
+      }
+
+      // Cek apakah barang termasuk dalam kategori barang
+      const barang = await prisma.aset.findUnique({ where: { id: peminjaman.barangId } });
+      if (barang.kategoriId === 1) {
+        // Ganti "1" dengan ID kategori barang
+        // Tambahkan kembali jumlah barang yang dipinjam
+        await prisma.aset.update({
+          where: { id: peminjaman.barangId },
+          data: { jumlah: { increment: peminjaman.jumlahBarang } },
+        });
+      }
+
+      return peminjaman;
+    });
+
+    return transaction;
+  } catch (error) {
+    console.error("Error di rejectPeminjaman:", error);
+    throw new Error("Gagal menolak peminjaman: " + error.message);
+  }
 };
 
 const pencetNotifikasi = async (userId) => {
@@ -105,45 +191,6 @@ const pencetNotifikasi = async (userId) => {
   return peminjaman;
 };
 
-const returnBarang = async (id, buktiPengembalian) => {
-  try {
-    // Cek apakah peminjaman dengan ID tersebut ada
-    const peminjaman = await prisma.peminjaman.findUnique({
-      where: { id },
-    });
-
-    if (!peminjaman) {
-      throw new Error("Peminjaman tidak ditemukan");
-    }
-
-    // Update record peminjaman dengan status "DIKEMBALIKAN" dan bukti_pengembalian
-    const updatedPeminjaman = await prisma.peminjaman.update({
-      where: { id },
-      data: {
-        status: "DIKEMBALIKAN",
-        bukti_pengembalian: buktiPengembalian, // Pastikan kolom ini sesuai dengan nama di database
-      },
-    });
-
-    // Pastikan barangId ada di record peminjaman
-    if (!peminjaman.barangId) {
-      throw new Error("barangId tidak ditemukan pada peminjaman");
-    }
-
-    // Update barang agar status ketersediaannya kembali tersedia
-    await prisma.barang.update({
-      where: { id: peminjaman.barangId },
-      data: { available: "Ya" },
-    });
-
-    // Kembalikan data peminjaman yang sudah diperbarui
-    return updatedPeminjaman;
-  } catch (error) {
-    console.error("Error di returnBarang:", error.message);
-    throw new Error("Gagal mengembalikan barang: " + error.message);
-  }
-};
-
 // Example query in your service to fetch peminjaman with the associated barang name
 const trackPeminjaman = async (userId) => {
   const peminjaman = await prisma.peminjaman.findMany({
@@ -151,7 +198,7 @@ const trackPeminjaman = async (userId) => {
     include: {
       barang: {
         // Include related barang data
-        select: { name: true }, // Select only the 'name' field from barang
+        select: { name: true, jumlah: true, kategoriId: true }, // Select only the 'name' field from barang
       },
     },
     orderBy: {
@@ -178,7 +225,7 @@ const trackPeminjamanNotifikasi = async (userId) => {
     include: {
       barang: {
         // Include related barang data
-        select: { name: true }, // Select only the 'name' field from barang
+        select: { name: true, jumlah: true, kategoriId: true }, // Select only the 'name' field from barang
       },
     },
     orderBy: {
@@ -216,7 +263,7 @@ const getAllPeminjaman = async () => {
   const peminjamanList = await prisma.peminjaman.findMany({
     include: {
       barang: {
-        select: { name: true }, // Select the 'name' field from barang
+        select: { name: true, jumlah: true, kategoriId: true }, // Select the 'name' field from barang
       },
       user: {
         select: { name: true, email: true, role: true }, // Select the 'name' and 'email' fields from the user

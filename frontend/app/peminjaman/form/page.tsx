@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
+const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang, showJumlah }) => {
   const [kategori, setKategori] = useState([]);
   const [selectedKategori, setSelectedKategori] = useState(selectedBarang?.kategoriId || "");
   const [barang, setBarang] = useState([]);
   const [user, setUser] = useState({ id: "", role: "" });
+  const [jumlahBarang, setJumlahBarang] = useState(1); // Default jumlah barang adalah 1
 
   const [formData, setFormData] = useState({
     keperluan: "",
@@ -29,10 +29,10 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
 
   useEffect(() => {
     if (selectedBarang) {
-      setSelectedKategori(selectedBarang.kategoriId);
+      setSelectedKategori(selectedBarang.kategoriId); // Set kategori berdasarkan selectedBarang
       setFormData((prevData) => ({
         ...prevData,
-        barangIds: [selectedBarang.id],
+        barangIds: [selectedBarang.id], // Set barangIds dengan id barang yang dipilih
       }));
     }
   }, [selectedBarang]);
@@ -167,11 +167,18 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (Object.values(validationErrors).some((error) => error)) {
-      return;
+    // Validasi jumlah barang hanya untuk kategori barang
+    if (selectedKategori === "1") {
+      // Ganti "1" dengan ID kategori barang
+      const barangDipinjam = barang.find((item) => item.id === formData.barangIds[0]);
+      if (barangDipinjam && jumlahBarang > barangDipinjam.jumlah) {
+        toast.error(`Jumlah barang yang dipinjam melebihi stok yang tersedia (${barangDipinjam.jumlah})`);
+        return;
+      }
     }
 
-    await onSubmit(formData);
+    // Lanjutkan proses submit jika validasi berhasil
+    await onSubmit({ ...formData, jumlahBarang });
   };
 
   if (!isOpen) return null;
@@ -187,20 +194,6 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
 
         <h2 className="text-2xl font-bold mb-1 text-center">Form Peminjaman</h2>
         <form onSubmit={handleSubmit}>
-          <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">Keperluan:</label>
-            <select name="keperluan" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.keperluan} onChange={handleChange} required>
-              <option value="">Pilih Keperluan</option>
-              <option value="Akademik">Akademik</option>
-              <option value="Non Akademik">Non Akademik</option>
-            </select>
-          </div>
-
-          <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">Nama Kegiatan</label>
-            <input type="text" name="nama_kegiatan" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.nama_kegiatan} onChange={handleChange} required />
-          </div>
-
           <div className="mb-1">
             <label className="block text-sm font-medium text-gray-700">Kategori:</label>
             <select className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={selectedKategori} onChange={(e) => setSelectedKategori(e.target.value)} required>
@@ -234,6 +227,37 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
             </div>
           </div>
 
+          {/* Tampilkan kolom jumlah hanya jika showJumlah bernilai true */}
+          {showJumlah &&
+            selectedKategori !== "2" && ( // Ganti "1" dengan ID kategori barang
+              <div className="mb-1">
+                <label className="block text-sm font-medium text-gray-700">Jumlah:</label>
+                <input
+                  type="number"
+                  name="jumlahBarang"
+                  value={jumlahBarang}
+                  onChange={(e) => setJumlahBarang(Math.max(1, e.target.value))} // Pastikan jumlah minimal 1
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  min="1"
+                  required
+                />
+              </div>
+            )}
+
+          <div className="mb-1">
+            <label className="block text-sm font-medium text-gray-700">Keperluan:</label>
+            <select name="keperluan" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.keperluan} onChange={handleChange} required>
+              <option value="">Pilih Keperluan</option>
+              <option value="Akademik">Akademik</option>
+              <option value="Non Akademik">Non Akademik</option>
+            </select>
+          </div>
+
+          <div className="mb-1">
+            <label className="block text-sm font-medium text-gray-700">Nama Kegiatan</label>
+            <input type="text" name="nama_kegiatan" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.nama_kegiatan} onChange={handleChange} required />
+          </div>
+
           <div className="mb-1">
             <label className="block text-sm font-medium text-gray-700">Tanggal Peminjaman:</label>
             <input type="date" name="startDate" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.startDate} onChange={handleChange} required />
@@ -247,13 +271,13 @@ const PeminjamanFormModal = ({ isOpen, onClose, onSubmit, selectedBarang }) => {
           </div>
 
           <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">Waktu Mulai:</label>
+            <label className="block text-sm font-medium text-gray-700">Jam Mulai Peminjaman:</label>
             <input type="time" name="startTime" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.startTime} onChange={handleChange} required />
             {validationErrors.startTime && <p className="text-red-500 text-xs">{validationErrors.startTime}</p>}
           </div>
 
           <div className="mb-1">
-            <label className="block text-sm font-medium text-gray-700">Waktu Selesai:</label>
+            <label className="block text-sm font-medium text-gray-700">Jam Selesai Peminjaman:</label>
             <input type="time" name="endTime" className="mt-1 block w-full border border-gray-300 rounded-md p-2" value={formData.endTime} onChange={handleChange} required />
             {validationErrors.endTime && <p className="text-red-500 text-xs">{validationErrors.endTime}</p>}
           </div>

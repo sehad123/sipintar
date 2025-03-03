@@ -4,13 +4,13 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Modal Component for Editing Barang
 export default function EditBarangModal({ barang, onClose, onSave }) {
   const [name, setName] = useState(barang.name);
   const [kategoriId, setKategoriId] = useState(barang.kategoriId || "");
   const [kondisi, setKondisi] = useState(barang.kondisi || "");
   const [available, setAvailable] = useState(barang.available);
   const [lokasi, setLokasi] = useState(barang.lokasi || "");
+  const [jumlah, setJumlah] = useState(barang.jumlah || "");
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [kategoriList, setKategoriList] = useState([]);
@@ -57,9 +57,10 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
     const formData = new FormData();
     formData.append("name", name);
     formData.append("kategoriId", kategoriId);
-    formData.append("kondisi", kondisi);
+    formData.append("kondisi", isTempat ? "" : kondisi); // Set kondisi kosong untuk kategori "tempat"
     formData.append("available", available);
-    formData.append("lokasi", lokasi);
+    formData.append("lokasi", isTempat ? "" : lokasi); // Set lokasi kosong untuk kategori "tempat"
+    formData.append("jumlah", jumlah);
 
     if (photo) {
       formData.append("photo", photo);
@@ -68,6 +69,9 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
     await onSave(barang.id, formData);
     setLoading(false);
   };
+
+  // Cek apakah kategori yang dipilih adalah "tempat"
+  const isTempat = kategoriList.find((kategori) => kategori.id === parseInt(kategoriId))?.kategori.toLowerCase() === "tempat";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -80,14 +84,25 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
         </div>
 
         <div className="space-y-4">
+          {/* Field Nama (Read-only) */}
           <div>
-            <label className="block text-sm font-medium">Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
+            <label className="block text-sm font-medium">Nama</label>
+            <input
+              type="text"
+              value={name}
+              readOnly // Menambahkan atribut readOnly
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500 bg-gray-100 cursor-not-allowed" // Menambahkan styling untuk menunjukkan bahwa elemen ini tidak dapat diubah
+            />
           </div>
 
+          {/* Field Kategori (Disabled) */}
           <div>
             <label className="block text-sm font-medium">Kategori</label>
-            <select value={kategoriId} onChange={(e) => setKategoriId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500">
+            <select
+              value={kategoriId}
+              disabled // Menambahkan atribut disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500 bg-gray-100 cursor-not-allowed" // Menambahkan styling untuk menunjukkan bahwa elemen ini tidak dapat diubah
+            >
               <option value="" disabled>
                 Pilih Kategori
               </option>
@@ -99,23 +114,37 @@ export default function EditBarangModal({ barang, onClose, onSave }) {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium">Kondisi</label>
-            <input type="text" value={kondisi} onChange={(e) => setKondisi(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
-          </div>
+          {/* Tampilkan kolom tersedia hanya jika kategori adalah "tempat" */}
+          {isTempat && (
+            <div>
+              <label className="block text-sm font-medium">Tersedia</label>
+              <select value={available} onChange={(e) => setAvailable(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500">
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium">Tersedia</label>
-            <select value={available} onChange={(e) => setAvailable(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500">
-              <option value="Ya">Ya</option>
-              <option value="Tidak">Tidak</option>
-            </select>
-          </div>
+          {!isTempat && (
+            <>
+              <div>
+                <label className="block text-sm font-medium">Kondisi</label>
+                <input type="text" value={kondisi} onChange={(e) => setKondisi(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Lokasi</label>
+                <input type="text" value={lokasi} onChange={(e) => setLokasi(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
+              </div>
+            </>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium">Lokasi</label>
-            <input type="text" value={lokasi} onChange={(e) => setLokasi(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
-          </div>
+          {/* Tampilkan kolom jumlah hanya jika kategori bukan "tempat" */}
+          {!isTempat && (
+            <div>
+              <label className="block text-sm font-medium">Jumlah</label>
+              <input type="number" value={jumlah} onChange={(e) => setJumlah(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-500" />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium">Photo</label>

@@ -2,36 +2,40 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
-import AddBarangModal from "../add/page";
-import EditBarangModal from "../edit/page";
-import DeleteConfirmationModal from "../delete/page";
+import AddBarangModal from "../../data-barang/add/page";
+import EditBarangModal from "../../data-barang/edit/page";
+import DeleteConfirmationModal from "../../data-barang/delete/page";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function BarangList() {
+export default function TempatList() {
   const [barangList, setBarangList] = useState([]);
   const [filteredBarangList, setFilteredBarangList] = useState([]);
   const [error, setError] = useState(null);
   const [editingBarang, setEditingBarang] = useState(null);
   const [deletingBarang, setDeletingBarang] = useState(null);
   const [addingBarang, setAddingBarang] = useState(false);
-  const [searchName, setSearchName] = useState(""); // State untuk filter nama
-  const [searchKondisi, setSearchKondisi] = useState(""); // State untuk filter kondisi
-  const [searchLokasi, setSearchLokasi] = useState(""); // State untuk filter lokasi
-  const [currentPage, setCurrentPage] = useState(1); // State untuk pagination
-  const [previewImage, setPreviewImage] = useState(null); // State untuk preview gambar
-  const itemsPerPage = 5; // Jumlah item per halaman
+  const [searchName, setSearchName] = useState(""); // State for search input
+  const [availabilityFilter, setAvailabilityFilter] = useState(""); // State for availability filter
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const [previewImage, setPreviewImage] = useState(null); // State for image preview
+  const itemsPerPage = 10; // Items per page
 
-  // Fetch data barang
+  // Fetch barang data
   useEffect(() => {
     const fetchBarangList = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/barang/barang");
-        if (!response.ok) {
+        const barangRes = await fetch("http://localhost:5000/api/barang/tempat");
+
+        if (!barangRes.ok) {
           throw new Error("HTTP error!");
         }
-        const data = await response.json();
-        const sortedBarangData = data.sort((a, b) => a.name.localeCompare(b.name)); // Urutkan berdasarkan nama
+
+        const barangData = await barangRes.json();
+
+        // Urutkan barang berdasarkan nama secara ascending
+        const sortedBarangData = barangData.sort((a, b) => a.name.localeCompare(b.name));
+
         setBarangList(sortedBarangData);
         setFilteredBarangList(sortedBarangData);
       } catch (error) {
@@ -45,14 +49,14 @@ export default function BarangList() {
 
   // Handle filtering
   useEffect(() => {
-    const filteredList = barangList
-      .filter((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase())) // Filter berdasarkan nama
-      .filter((barang) => barang.kondisi.toLowerCase().includes(searchKondisi.toLowerCase())) // Filter berdasarkan kondisi
-      .filter((barang) => barang.lokasi.toLowerCase().includes(searchLokasi.toLowerCase())); // Filter berdasarkan lokasi
+    const filteredList = barangList.filter((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase())).filter((barang) => (availabilityFilter ? barang.available === availabilityFilter : true));
 
-    setFilteredBarangList(filteredList);
-    setCurrentPage(1); // Reset ke halaman pertama setelah filtering
-  }, [searchName, searchKondisi, searchLokasi, barangList]);
+    // Urutkan hasil filter berdasarkan nama secara ascending
+    const sortedFilteredList = filteredList.sort((a, b) => a.name.localeCompare(b.name));
+
+    setFilteredBarangList(sortedFilteredList);
+    setCurrentPage(1); // Reset to first page after filtering
+  }, [searchName, availabilityFilter, barangList]);
 
   // Handle pagination
   const lastIndex = currentPage * itemsPerPage;
@@ -72,11 +76,11 @@ export default function BarangList() {
       if (res.ok) {
         const data = await res.json();
         setBarangList((prevBarang) => [...prevBarang, data].sort((a, b) => a.name.localeCompare(b.name))); // Update state dan urutkan
-        toast.success("Penambahan Barang berhasil!");
-        handleCloseAddModal();
+        toast.success("Penambahan Barang berhasil!"); // Tampilkan notifikasi
+        handleCloseAddModal(); // Tutup modal
       } else {
         const result = await res.json();
-        toast.error(`Error: ${result.error}`);
+        toast.error(`Error: ${result.error}`); // Tampilkan error
       }
     } catch (error) {
       console.error("Error saving barang:", error.message);
@@ -95,11 +99,11 @@ export default function BarangList() {
         const data = await res.json();
         const updatedList = barangList.map((barang) => (barang.id === id ? data : barang)).sort((a, b) => a.name.localeCompare(b.name)); // Update state dan urutkan
         setBarangList(updatedList);
-        toast.success("Perubahan Barang berhasil!");
-        setEditingBarang(null);
+        toast.success("Perubahan Barang berhasil!"); // Tampilkan notifikasi
+        setEditingBarang(null); // Tutup modal
       } else {
         const result = await res.json();
-        toast.error(`Error: ${result.error}`);
+        toast.error(`Error: ${result.error}`); // Tampilkan error
       }
     } catch (error) {
       console.error("Error editing barang:", error.message);
@@ -121,13 +125,13 @@ export default function BarangList() {
         toast.success("Penghapusan Barang berhasil!");
       } else {
         const result = await res.json();
-        toast.error(`Error: ${result.error}`);
+        toast.error(`Error: ${result.error}`); // Tampilkan error dari backend
       }
     } catch (error) {
       console.error("Error deleting barang:", error.message);
       setError("Error deleting barang.");
     } finally {
-      setDeletingBarang(null);
+      setDeletingBarang(null); // Close the delete modal
     }
   };
 
@@ -145,9 +149,8 @@ export default function BarangList() {
 
   const handleResetFilter = () => {
     setSearchName("");
-    setSearchKondisi("");
-    setSearchLokasi("");
-    setFilteredBarangList(barangList); // Reset ke daftar barang penuh
+    setAvailabilityFilter("");
+    setFilteredBarangList(barangList); // Reset to full list
   };
 
   const handleImageClick = (imageUrl) => {
@@ -174,27 +177,21 @@ export default function BarangList() {
 
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
+        {/* Search and Filters */}
         <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Nama Tempat */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Barang</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Tempat</label>
               <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari nama..." value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </div>
-
-            {/* Kondisi */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kondisi</label>
-              <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari kondisi..." value={searchKondisi} onChange={(e) => setSearchKondisi(e.target.value)} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ketersediaan</label>
+              <select className="w-full p-2 border rounded-md" value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value)}>
+                <option value="">Semua</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
             </div>
-
-            {/* Lokasi */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
-              <input type="text" className="w-full p-2 border rounded-md" placeholder="Cari lokasi..." value={searchLokasi} onChange={(e) => setSearchLokasi(e.target.value)} />
-            </div>
-
-            {/* Tombol Reset */}
             <div>
               <button className="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition duration-200" onClick={handleResetFilter}>
                 Reset Filter
@@ -208,11 +205,9 @@ export default function BarangList() {
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Barang</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tempat</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kondisi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tersedia</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
@@ -227,9 +222,7 @@ export default function BarangList() {
                       "No Image"
                     )}
                   </td>
-                  <td className="px-6 py-4">{barang.kondisi}</td>
-                  <td className="px-6 py-4">{barang.lokasi}</td>
-                  <td className="px-6 py-4">{barang.jumlah}</td>
+                  <td className="px-6 py-4">{barang.available}</td>
                   <td className="px-6 py-4 flex space-x-2">
                     <button className="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600 transition duration-200" onClick={() => setEditingBarang(barang)}>
                       <FontAwesomeIcon icon={faEdit} />

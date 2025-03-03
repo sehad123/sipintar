@@ -8,6 +8,7 @@ export default function AddBarangModal({ onClose, onSave }) {
     name: "",
     kategoriId: "",
     kondisi: "",
+    jumlah: "",
     lokasi: "",
     available: "",
     photo: null,
@@ -31,9 +32,24 @@ export default function AddBarangModal({ onClose, onSave }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewBarang((prevBarang) => ({ ...prevBarang, [name]: value }));
-  };
 
+    if (name === "kategoriId") {
+      const selectedKategori = kategoriList.find((kategori) => kategori.id === parseInt(value));
+      if (selectedKategori) {
+        const isTempat = selectedKategori.kategori.toLowerCase() === "tempat";
+        setNewBarang((prevBarang) => ({
+          ...prevBarang,
+          [name]: value,
+          jumlah: isTempat ? "1" : "", // Set jumlah otomatis ke 1 untuk kategori "tempat"
+          available: isTempat ? "Ya" : prevBarang.available, // Set tersedia otomatis ke "Ya" untuk kategori "tempat"
+          kondisi: isTempat ? "" : prevBarang.kondisi, // Set kondisi kosong untuk kategori "tempat"
+          lokasi: isTempat ? "" : prevBarang.lokasi, // Set lokasi kosong untuk kategori "tempat"
+        }));
+      }
+    } else {
+      setNewBarang((prevBarang) => ({ ...prevBarang, [name]: value }));
+    }
+  };
   const handleFileChange = (e) => {
     const file = e.target.files[0];
 
@@ -68,10 +84,13 @@ export default function AddBarangModal({ onClose, onSave }) {
     onSave(formData);
   };
 
+  // Cek apakah kategori yang dipilih adalah "tempat"
+  const isTempat = kategoriList.find((kategori) => kategori.id === parseInt(newBarang.kategoriId))?.kategori.toLowerCase() === "tempat";
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-center">Formulir Penambahan Barang</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">Formulir Penambahan Aset</h2>
         <label className="block mb-2">Kategori</label>
         <select name="kategoriId" value={newBarang.kategoriId} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded">
           <option value="" disabled>
@@ -88,23 +107,27 @@ export default function AddBarangModal({ onClose, onSave }) {
           <input type="text" name="name" value={newBarang.name} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
         </div>
 
-        <div className="mb-4">
-          <label className="block mb-2">Kondisi</label>
-          <input type="text" name="kondisi" value={newBarang.kondisi} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-2">Lokasi</label>
-          <input type="text" name="lokasi" value={newBarang.lokasi} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
-        </div>
-        <div className="mb-4">
-          <select name="available" value={newBarang.available} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded">
-            <option value="" disabled>
-              Pilih Ketersediaan
-            </option>
-            <option value="Ya">Ya</option>
-            <option value="Tidak">Tidak</option>
-          </select>
-        </div>
+        {!isTempat && (
+          <>
+            <div className="mb-4">
+              <label className="block mb-2">Kondisi</label>
+              <input type="text" name="kondisi" value={newBarang.kondisi} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
+            </div>
+            <div className="mb-4">
+              <label className="block mb-2">Lokasi</label>
+              <input type="text" name="lokasi" value={newBarang.lokasi} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
+            </div>
+          </>
+        )}
+        {/* Tampilkan kolom jumlah hanya jika kategori bukan "tempat" */}
+        {!isTempat && (
+          <div className="mb-4">
+            <label className="block mb-2">Jumlah</label>
+            <input type="number" name="jumlah" value={newBarang.jumlah} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded" />
+          </div>
+        )}
+        {/* Tampilkan kolom tersedia hanya jika kategori adalah "tempat" */}
+
         <div className="mb-4">
           <label className="block mb-2">Foto</label>
           <input

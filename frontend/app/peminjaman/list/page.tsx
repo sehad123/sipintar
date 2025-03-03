@@ -8,39 +8,6 @@ const ProsedurPeminjaman = () => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [user, setUser] = useState({ id: "", role: "" });
-  const [barangList, setBarangList] = useState([]);
-  const [filteredBarangList, setFilteredBarangList] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [error, setError] = useState(null);
-  const [searchName, setSearchName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  useEffect(() => {
-    const fetchBarangList = async () => {
-      try {
-        const [barangRes, categoriesRes] = await Promise.all([fetch("http://localhost:5000/api/barang"), fetch("http://localhost:5000/api/kategori")]);
-
-        if (!barangRes.ok || !categoriesRes.ok) throw new Error("HTTP error!");
-
-        const barangData = await barangRes.json();
-        const categoriesData = await categoriesRes.json();
-
-        setBarangList(barangData);
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error("Error fetching barang or categories:", error.message);
-        setError("Failed to fetch data. Please try again later.");
-      }
-    };
-    fetchBarangList();
-  }, []);
-
-  useEffect(() => {
-    const filteredList = barangList.filter((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase()));
-    setFilteredBarangList(filteredList);
-    setCurrentPage(1);
-  }, [searchName, barangList]);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -61,14 +28,6 @@ const ProsedurPeminjaman = () => {
     setFile(e.target.files[0]);
   };
 
-  const totalPages = Math.ceil(filteredBarangList.length / itemsPerPage);
-  const paginatedBarangList = filteredBarangList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.kategori : "Unknown";
-  };
-
   const handleSubmit = async (formData) => {
     const formDataToSend = new FormData();
     formDataToSend.append("userId", formData.userId);
@@ -80,6 +39,7 @@ const ProsedurPeminjaman = () => {
     formDataToSend.append("startTime", formData.startTime);
     formDataToSend.append("endTime", formData.endTime);
     formDataToSend.append("bukti_persetujuan", formData.bukti_persetujuan);
+    formDataToSend.append("jumlahBarang", formData.jumlahBarang);
 
     try {
       const response = await fetch("http://localhost:5000/api/peminjaman", {
@@ -107,10 +67,6 @@ const ProsedurPeminjaman = () => {
       toast.error("Terjadi kesalahan saat mengirim data.");
       console.error("Error submitting form:", error);
     }
-  };
-
-  const isBarangUnavailable = () => {
-    return searchName && filteredBarangList.some((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase()) && barang.available === "Tidak");
   };
 
   // Komponen Roadmap Alur
@@ -173,42 +129,9 @@ const ProsedurPeminjaman = () => {
       </section>
 
       {/* Tabel Barang */}
-      <section className="container mx-auto p-4 mb-8 w-full max-w-4xl">
-        {searchName && isBarangUnavailable() ? (
-          <p className="text-red-500 text-center mt-4">Barang saat ini sedang tidak tersedia</p>
-        ) : (
-          searchName &&
-          filteredBarangList.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse rounded-lg shadow-sm">
-                <thead>
-                  <tr className="bg-gray-200 text-gray-600">
-                    <th className="border p-4 text-left">Nama Barang</th>
-                    <th className="border p-4 text-center">Foto</th>
-                    <th className="border p-4 text-left">Kondisi</th>
-                    <th className="border p-4 text-left">Lokasi</th>
-                    <th className="border p-4 text-left">Kategori</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedBarangList.map((barang) => (
-                    <tr key={barang.id} className="hover:bg-gray-100">
-                      <td className="border p-4">{barang.name}</td>
-                      <td className="border p-4 text-center">{barang.photo ? <img src={`http://localhost:5000${barang.photo}`} alt={barang.name} className="w-20 h-20 object-cover rounded-lg mx-auto" /> : "No Image"}</td>
-                      <td className="border p-4">{barang.kondisi}</td>
-                      <td className="border p-4">{barang.lokasi}</td>
-                      <td className="border p-4">{getCategoryName(barang.kategoriId)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
-      </section>
 
       {/* Tombol Ajukan Peminjaman */}
-      <button onClick={handleOpenModal} className="-mt-10 md:mt-[350px]   bg-blue-500 text-white font-semibold py-2 px-6 rounded shadow hover:bg-blue-600 transition duration-200">
+      <button onClick={handleOpenModal} className="-mt-15 md:mt-[380px]   bg-blue-500 text-white font-semibold py-2 px-6 rounded shadow hover:bg-blue-600 transition duration-200">
         Ajukan Peminjaman
       </button>
 

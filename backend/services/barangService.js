@@ -2,9 +2,8 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 // Create a new barang
-const addBarang = async ({ name, kategoriId, lokasi, kondisi, photo, available }) => {
-  // Check if the name already exists in the database
-  const existingBarang = await prisma.barang.findFirst({
+const addBarang = async ({ name, kategoriId, lokasi, kondisi, photo, available, jumlah }) => {
+  const existingBarang = await prisma.aset.findFirst({
     where: { name },
   });
 
@@ -12,14 +11,26 @@ const addBarang = async ({ name, kategoriId, lokasi, kondisi, photo, available }
     throw new Error("Nama barang sudah terdaftar, gunakan nama lain.");
   }
 
-  // Create a new barang
-  return prisma.barang.create({
+  // Jika kategori adalah "tempat", set jumlah ke 1 dan available ke "Ya"
+  const selectedKategori = await prisma.kategoriAset.findUnique({
+    where: { id: parseInt(kategoriId) },
+  });
+
+  const isTempat = selectedKategori.kategori.toLowerCase() === "tempat";
+
+  const jumlahFinal = isTempat ? 1 : parseInt(jumlah);
+  const availableFinal = isTempat ? "Ya" : "Ya";
+  const kondisiFinal = isTempat ? "" : kondisi;
+  const lokasiFinal = isTempat ? "" : lokasi;
+
+  return prisma.aset.create({
     data: {
       name: name || "",
       kategoriId,
-      lokasi: lokasi || "",
-      kondisi: kondisi || "",
-      available: available || "",
+      jumlah: jumlahFinal,
+      lokasi: lokasiFinal,
+      kondisi: kondisiFinal,
+      available: availableFinal,
       photo: photo || null,
     },
   });
@@ -27,10 +38,10 @@ const addBarang = async ({ name, kategoriId, lokasi, kondisi, photo, available }
 
 const updateBarang = async (id, data) => {
   if (data.name) {
-    const existingBarang = await prisma.barang.findFirst({
+    const existingBarang = await prisma.aset.findFirst({
       where: {
         name: data.name,
-        NOT: { id: id }, // Ensure we're not checking against the same barang
+        NOT: { id: id },
       },
     });
 
@@ -39,15 +50,27 @@ const updateBarang = async (id, data) => {
     }
   }
 
-  return prisma.barang.update({
+  // Jika kategori adalah "tempat", set jumlah ke 1 dan kondisi serta lokasi ke string kosong
+  if (data.kategoriId) {
+    const selectedKategori = await prisma.kategoriAset.findUnique({
+      where: { id: parseInt(data.kategoriId) },
+    });
+
+    if (selectedKategori.kategori.toLowerCase() === "tempat") {
+      data.jumlah = 1;
+      data.kondisi = "";
+      data.lokasi = "";
+    }
+  }
+
+  return prisma.aset.update({
     where: { id: parseInt(id) },
     data,
   });
 };
-
 // Read all barang
 const getAllBarang = async () =>
-  prisma.barang.findMany({
+  prisma.aset.findMany({
     include: { kategori: true }, // Include kategori for more detailed response
   });
 
@@ -61,14 +84,14 @@ const getAvailableBarang = async (kategoriId) => {
     filter.kategoriId = parseInt(kategoriId);
   }
 
-  return prisma.barang.findMany({
+  return prisma.aset.findMany({
     where: filter,
     include: { kategori: true }, // Include kategori for more detailed response
   });
 };
 // Read a single barang by ID
 const getBarangById = async (id) =>
-  prisma.barang.findUnique({
+  prisma.aset.findUnique({
     where: { id: parseInt(id) },
     include: { kategori: true }, // Include kategori for detailed response
   });
@@ -81,12 +104,12 @@ const deleteBarang = async (id) => {
   });
 
   // Setelah itu, baru hapus barang
-  return prisma.barang.delete({
+  return prisma.aset.delete({
     where: { id: parseInt(id) },
   });
 };
 const getBarangByKategoriBarang = async () => {
-  return prisma.barang.findMany({
+  return prisma.aset.findMany({
     where: {
       kategoriId: 1, // Filter by kategoriId = 1 (barang)
     },
@@ -95,7 +118,7 @@ const getBarangByKategoriBarang = async () => {
 };
 
 const getBarangByKategoriTempat = async () => {
-  return prisma.barang.findMany({
+  return prisma.aset.findMany({
     where: {
       kategoriId: 2, // Filter by kategoriId = 2 (tempat)
     },

@@ -39,10 +39,6 @@ router.put("/peminjaman/:id/kembali", upload.single("bukti_pengembalian"), async
     const { id } = req.params;
     const buktiPengembalianPath = req.file ? req.file.filename : null;
 
-    // if (!buktiPengembalianPath) {
-    //   return res.status(400).json({ error: "File bukti pengembalian tidak diunggah." });
-    // }
-
     // Panggil fungsi returnBarang dan log hasilnya
     const peminjaman = await returnBarang(parseInt(id), buktiPengembalianPath);
     console.log("Peminjaman berhasil diperbarui:", peminjaman);
@@ -55,9 +51,9 @@ router.put("/peminjaman/:id/kembali", upload.single("bukti_pengembalian"), async
 });
 
 router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) => {
-  const { userId, barangIds: rawBarangIds, startDate, endDate, startTime, endTime, keperluan, nama_kegiatan } = req.body;
+  const { userId, barangIds: rawBarangIds, startDate, endDate, startTime, endTime, keperluan, nama_kegiatan, jumlahBarang } = req.body;
 
-  const bukti_persetujuan = req.file ? req.file.filename : null; // Ambil nama file yang diunggah
+  const bukti_persetujuan = req.file ? req.file.filename : null;
   let barangIds;
   try {
     barangIds = typeof rawBarangIds === "string" ? JSON.parse(rawBarangIds) : rawBarangIds;
@@ -79,11 +75,23 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
 
     // Cek ketersediaan barang
     for (const barangId of barangIds) {
-      const barangAvailability = await checkBarangAvailability(barangId, startDate, endDate);
-      if (barangAvailability) {
-        return res.status(400).json({
-          error: `Barang "${barangAvailability.name}" sudah diajukan pengguna lain pada tanggal ${new Date(barangAvailability.startDate).toLocaleDateString()} hingga ${new Date(barangAvailability.endDate).toLocaleDateString()}.`,
-        });
+      const barang = await prisma.aset.findUnique({
+        where: { id: parseInt(barangId, 10) },
+        select: { kategoriId: true },
+      });
+
+      if (!barang) {
+        return res.status(404).json({ error: `Barang dengan ID ${barangId} tidak ditemukan` });
+      }
+
+      // Jika kategori adalah "tempat" (kategoriId = 2), cek konflik peminjaman
+      if (barang.kategoriId === 2) {
+        const barangAvailability = await checkBarangAvailability(barangId, startDate, endDate);
+        if (barangAvailability) {
+          return res.status(400).json({
+            error: `Barang "${barangAvailability.name}" sudah diajukan pengguna lain pada tanggal ${new Date(barangAvailability.startDate).toLocaleDateString()} hingga ${new Date(barangAvailability.endDate).toLocaleDateString()}.`,
+          });
+        }
       }
     }
 
@@ -99,6 +107,7 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
         keperluan,
         nama_kegiatan,
         bukti_persetujuan,
+        jumlahBarang: parseInt(jumlahBarang, 10),
       })
     );
 
@@ -106,9 +115,10 @@ router.post("/peminjaman", upload.single("bukti_persetujuan"), async (req, res) 
     res.status(201).json(peminjamans);
   } catch (error) {
     console.error("Error in creating peminjaman:", error);
-    res.status(500).json({ error: "An error occurred while creating peminjaman" });
+    res.status(500).json({ error: error.message || "An error occurred while creating peminjaman" });
   }
 });
+
 // Route to approve peminjaman
 router.put("/peminjaman/:id/approve", async (req, res) => {
   try {

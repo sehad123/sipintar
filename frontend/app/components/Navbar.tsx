@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTable, faUsers, faClipboardList, faUserCircle, faHandHolding, faHistory, faBell, faTimes, faList, faBuilding, faBars } from "@fortawesome/free-solid-svg-icons";
+import { faTable, faUsers, faClipboardList, faUserCircle, faHandHolding, faHistory, faBell, faTimes, faList, faBuilding, faBars, faSchool } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -113,7 +113,11 @@ export function Navbar({}) {
             <>
               <Link href="/data-barang" className={`${pathname === "/data-barang" ? "bg-gray-700 text-white" : "text-gray-300"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center`}>
                 <FontAwesomeIcon icon={faTable} className="mr-2" />
-                Barang & Tempat
+                Barang
+              </Link>
+              <Link href="/data-tempat" className={`${pathname === "/data-tempat" ? "bg-gray-700 text-white" : "text-gray-300"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center`}>
+                <FontAwesomeIcon icon={faSchool} className="mr-2" />
+                Tempat
               </Link>
               <Link href="/data-peminjaman" className={`${pathname === "/data-peminjaman" ? "bg-gray-700 text-white" : "text-gray-300"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center relative`}>
                 <FontAwesomeIcon icon={faClipboardList} className="mr-2" />
@@ -170,6 +174,7 @@ export function Navbar({}) {
                     notificationItems.slice(0, 5).map((item, index) => (
                       <li key={index} className="text-gray-700 border-b border-gray-200 pb-2">
                         <p className="font-semibold text-center">{item.barang.name} </p>
+                        {item.barang.kategoriId === 1 ? <p className="text-sm">jumlah: {item.jumlahBarang} </p> : <div className="text-gray-600 mb-2"></div>}
                         <p className="text-sm">kegiatan: {item.nama_kegiatan} </p>
                         <p className="text-sm">Tanggal Pengajuan: {new Date(item.createdAt).toLocaleDateString("id-ID")}</p>
                         <p className="text-sm">Catatan: {item.catatan || "Tidak ada catatan"}</p>
@@ -220,6 +225,10 @@ export function Navbar({}) {
                   <Link href="/data-barang" className={`${pathname === "/data-barang" ? "bg-gray-700 text-white" : "text-white"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center`}>
                     <FontAwesomeIcon icon={faTable} className="mr-2" />
                     Data Barang
+                  </Link>
+                  <Link href="/data-tempat" className={`${pathname === "/data-tempat" ? "bg-gray-700 text-white" : "text-white"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center`}>
+                    <FontAwesomeIcon icon={faSchool} className="mr-2" />
+                    Data Tempat
                   </Link>
                   <Link href="/data-peminjaman" className={`${pathname === "/data-peminjaman" ? "bg-gray-700 text-white" : "text-white"} hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center relative`}>
                     <FontAwesomeIcon icon={faClipboardList} className="mr-2" />

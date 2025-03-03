@@ -3,7 +3,6 @@ import PeminjamanFormModal from "@/app/peminjaman/form/page";
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useRouter } from "next/navigation"; // Import useRouter untuk navigasi
 
 export default function ListBarang() {
   const [barangList, setBarangList] = useState([]);
@@ -18,12 +17,11 @@ export default function ListBarang() {
   const [availabilityFilter, setAvailabilityFilter] = useState(""); // State for availability filter
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
   const itemsPerPage = 6; // Items per page
-  const router = useRouter(); // Inisialisasi useRouter
 
   // Fungsi untuk membuka modal dan menyimpan barang yang dipilih
   const handleOpenModal = (barang) => {
-    if (barang.available === "Ya") {
-      setSelectedBarang(barang);
+    if (barang.jumlah !== 0) {
+      setSelectedBarang(barang); // Pastikan barang mengandung kategoriId
       setModalOpen(true);
     } else {
       toast.error("Barang tidak tersedia untuk dipinjam.");
@@ -64,7 +62,15 @@ export default function ListBarang() {
       .filter((barang) => barang.name.toLowerCase().includes(searchName.toLowerCase()))
       .filter((barang) => barang.lokasi.toLowerCase().includes(searchLokasi.toLowerCase()))
       .filter((barang) => barang.kondisi.toLowerCase().includes(searchKondisi.toLowerCase()))
-      .filter((barang) => (availabilityFilter ? barang.available === availabilityFilter : true));
+      .filter((barang) => {
+        if (availabilityFilter === "Ya") {
+          return barang.jumlah > 0; // Tampilkan barang dengan jumlah > 0
+        } else if (availabilityFilter === "Tidak") {
+          return barang.jumlah === 0; // Tampilkan barang dengan jumlah = 0
+        }
+        return true; // Tampilkan semua barang jika tidak ada filter
+      });
+
     setFilteredBarangList(filteredList);
     setCurrentPage(1); // Reset to first page after filtering
   }, [searchName, searchKondisi, searchLokasi, availabilityFilter, barangList]);
@@ -75,10 +81,6 @@ export default function ListBarang() {
   const paginatedBarangList = filteredBarangList.slice(firstIndex, lastIndex);
 
   // Get category name by ID
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.kategori : "Unknown"; // Fallback if category is not found
-  };
 
   // Fungsi untuk navigasi halaman berikutnya
   const handleNextPage = () => {
@@ -115,6 +117,7 @@ export default function ListBarang() {
     formDataToSend.append("startTime", formData.startTime);
     formDataToSend.append("endTime", formData.endTime);
     formDataToSend.append("bukti_persetujuan", formData.bukti_persetujuan);
+    formDataToSend.append("jumlahBarang", formData.jumlahBarang);
 
     try {
       const response = await fetch("http://localhost:5000/api/peminjaman", {
@@ -143,6 +146,7 @@ export default function ListBarang() {
       console.error("Error submitting form:", error);
     }
   };
+
   const totalPages = Math.ceil(filteredBarangList.length / itemsPerPage);
 
   return (
@@ -150,8 +154,15 @@ export default function ListBarang() {
       <ToastContainer />
 
       {/* Modal Form Peminjaman */}
-      {isModalOpen && <PeminjamanFormModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmit} selectedBarang={selectedBarang} />}
-
+      {isModalOpen && (
+        <PeminjamanFormModal
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleSubmit}
+          selectedBarang={selectedBarang}
+          showJumlah={true} // Tambahkan prop showJumlah
+        />
+      )}
       <div className="bg-white p-8 rounded-lg shadow-lg w-full">
         <h1 className="text-3xl font-bold text-center mb-6">Daftar Barang</h1>
 
@@ -184,13 +195,18 @@ export default function ListBarang() {
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Kondisi:</span> {barang.kondisi}
                 </div>
+
+                <div className="text-gray-600 mb-2">
+                  <span className="font-medium">Jumlah:</span> {barang.jumlah}
+                </div>
+
                 <div className="text-gray-600 mb-2">
                   <span className="font-medium">Lokasi:</span> {barang.lokasi}
                 </div>
-                <div className="text-gray-600 mb-2">
-                  <span className="font-medium">Tersedia:</span> {barang.available}
-                </div>
-                {barang.available === "Ya" && (
+                <span className="font-medium">Tersedia: {barang.jumlah !== 0 ? "Ya" : "Tidak"}</span>
+
+                <div className="text-gray-600 mb-2"></div>
+                {barang.jumlah !== 0 && (
                   <button onClick={() => handleOpenModal(barang)} className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200">
                     Ajukan Peminjaman
                   </button>
