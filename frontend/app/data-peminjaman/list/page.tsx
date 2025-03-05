@@ -222,6 +222,7 @@ const PeminjamanList = () => {
         month: "long",
         year: "numeric",
       }),
+      "Waktu Kegiatan": `${item.startTime} - ${item.endTime}`, // Tambahkan waktu kegiatan
       Status: item.status === "APPROVED" ? "DIPINJAM" : item.status === "REJECTED" ? "DITOLAK" : item.status,
     }));
 
@@ -240,30 +241,29 @@ const PeminjamanList = () => {
 
     // Tambahkan 3 baris kosong setelah data terakhir
     for (let i = 0; i < 3; i++) {
-      XLSX.utils.sheet_add_aoa(worksheet, [["", "", "", "", "", "", "", "", ""]], { origin: -1 });
+      XLSX.utils.sheet_add_aoa(worksheet, [["", "", "", "", "", "", "", "", "", ""]], { origin: -1 });
     }
 
     // Tambahkan ringkasan setelah baris kosong
     const summaryData = [
-      ["Ringkasan", "", "", "", "", "", "", "", ""],
-      ["Total Peminjaman", totalPeminjaman, "", "", "", "", "", "", ""],
-      ["Pending", pendingCount, "", "", "", "", "", "", ""],
-      ["Ditolak", rejectedCount, "", "", "", "", "", "", ""],
-      ["Dipinjam", approvedCount, "", "", "", "", "", "", ""],
-      ["Dikembalikan", returnedCount, "", "", "", "", "", "", ""],
+      ["Ringkasan", "", "", "", "", "", "", "", "", ""],
+      ["Total Peminjaman", totalPeminjaman, "", "", "", "", "", "", "", ""],
+      ["Pending", pendingCount, "", "", "", "", "", "", "", ""],
+      ["Ditolak", rejectedCount, "", "", "", "", "", "", "", ""],
+      ["Dipinjam", approvedCount, "", "", "", "", "", "", "", ""],
+      ["Dikembalikan", returnedCount, "", "", "", "", "", "", "", ""],
     ];
 
     XLSX.utils.sheet_add_aoa(worksheet, summaryData, { origin: -1 });
 
     // Tambahkan header secara manual
-    XLSX.utils.sheet_add_aoa(worksheet, [["Tanggal Pengajuan", "Nama Barang", "Nama Peminjam", "Peran", "Keperluan", "Kegiatan", "Tanggal Peminjaman", "Tanggal Pengembalian", "Status"]], { origin: "A1" });
+    XLSX.utils.sheet_add_aoa(worksheet, [["Tanggal Pengajuan", "Nama Barang", "Nama Peminjam", "Peran", "Keperluan", "Kegiatan", "Tanggal Peminjaman", "Tanggal Pengembalian", "Waktu Kegiatan", "Status"]], { origin: "A1" });
 
     // Buat workbook dan simpan file
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Peminjaman");
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
-
   const totalPages = Array.isArray(filteredData) ? Math.ceil(filteredData.length / itemsPerPage) : 0;
   const currentItems = Array.isArray(filteredData) ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : [];
 

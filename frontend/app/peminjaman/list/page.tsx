@@ -119,7 +119,7 @@ const ProsedurPeminjaman = () => {
         <p className="text-gray-500 text-center">Pastikan membaca instruksi sebelum melakukan peminjaman</p>{" "}
         {user.role === "Mahasiswa" ? (
           <>
-            <img src="/img/roadmap_peminjaman.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
+            <img src="/img/roadmap_fix.png" alt="Prosedur Peminjaman" className=" -mt-24 w-full h-auto object-cover rounded-lg" style={{ clipPath: "inset(3.5cm 0 2cm 0)" }} />
           </>
         ) : (
           <>
