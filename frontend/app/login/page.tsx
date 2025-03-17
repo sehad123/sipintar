@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn, getSession } from "next-auth/react";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"; // Import style untuk toastify
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -19,47 +20,53 @@ export default function Login() {
 
     if (res.ok) {
       const data = await res.json();
-
-      // Simpan user data atau token ke localStorage/sessionStorage
-      localStorage.setItem("user", JSON.stringify(data.user)); // Simpan data user
-      // localStorage.setItem("token", data.token); // Jika ada token dari server
-
-      toast.success("Login berhasil!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-
-      // Periksa role user dan arahkan ke halaman yang sesuai
+      console.log("Login successful, user data:", data);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      toast.success("Login berhasil!");
       setTimeout(() => {
         if (data.user.role === "Admin") {
-          router.push("/data-peminjaman"); // Arahkan ke halaman data barang
+          router.push("/data-peminjaman");
         } else {
-          router.push("/peminjaman"); // Arahkan ke halaman peminjaman
+          router.push("/peminjaman");
         }
-      }, 3000);
+      }, 1000); // Tunggu 1 detik sebelum redirect
     } else {
-      toast.error("Login gagal, coba lagi.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+      console.error("Login failed:", res.statusText);
+      toast.error("Login gagal, coba lagi.");
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const result = await signIn("google", { redirect: false });
+
+    if (result?.error) {
+      console.error("Google login error:", result.error);
+      toast.error("Login dengan Google gagal.");
+    } else {
+      // Tunggu session tersedia
+      const session = await getSession();
+      console.log("Session after Google login:", session);
+
+      if (session?.user) {
+        const { email, name, role } = session.user;
+        localStorage.setItem("user", JSON.stringify({ email, name, role }));
+        toast.success("Login berhasil!");
+
+        // Redirect berdasarkan role
+        setTimeout(() => {
+          if (role === "Admin") {
+            router.push("/data-peminjaman");
+          } else {
+            router.push("/peminjaman");
+          }
+        }, 1000); // Tunggu 1 detik sebelum redirect
+      }
     }
   };
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
-      <ToastContainer /> {/* Tambahkan ToastContainer di sini */}
+      <ToastContainer />
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
         <h1 className="text-3xl font-bold text-center mb-6">Login</h1>
         <form onSubmit={handleSubmit}>
@@ -89,6 +96,9 @@ export default function Login() {
             Masuk
           </button>
         </form>
+        {/* <button onClick={handleGoogleLogin} className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition duration-200 mt-4">
+          Login dengan Google
+        </button> */}
         <p className="text-center text-sm text-gray-600 mt-4">
           Belum punya akun?{" "}
           <span onClick={() => router.push("/data-pegawai/add")} className="text-blue-500 hover:underline cursor-pointer">

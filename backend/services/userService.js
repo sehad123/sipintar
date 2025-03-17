@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 
-// Create a new user (already implemented)
+// Create a new user
 const registerUser = async ({ name, email, password, role, no_hp }) => {
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -74,6 +74,7 @@ const deleteUser = async (id) => {
   }
 };
 
+// Login user
 const loginUser = async ({ email, password }) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return null;
@@ -84,4 +85,32 @@ const loginUser = async ({ email, password }) => {
   return user;
 };
 
-module.exports = { registerUser, getAllPegawaiUsers, getUserById, updateUser, deleteUser, loginUser };
+// Find or create user by email
+const findOrCreateUserByEmail = async ({ name, email, role = "Mahasiswa" }) => {
+  try {
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: { name, email, role },
+      });
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Error in findOrCreateUserByEmail:", error);
+    throw new Error("Failed to find or create user");
+  }
+};
+
+module.exports = {
+  registerUser,
+  getAllPegawaiUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  loginUser,
+  findOrCreateUserByEmail,
+};

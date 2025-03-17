@@ -9,14 +9,41 @@ datasource db {
 }
 
 model User {
-  id         Int        @id @default(autoincrement())
-  name       String
-  email      String     @unique
-  password   String
-  role       String     // "ADMIN", "PEGAWAI", "SUPERADMIN"
-  createdAt  DateTime   @default(now())
-  no_hp String?
-  peminjaman Peminjaman[]
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password      String?
+  role          String    @default("Mahasiswa") // Hanya "Alumni", "Dosen", atau "Mahasiswa"
+  createdAt     DateTime  @default(now())
+  no_hp         String?
+  peminjaman    Peminjaman[]
+  accounts      Account[]
+  sessions      Session[]
+}
+model Account {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  provider          String
+  providerAccountId String
+  type              String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+  user              User      @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 

@@ -97,11 +97,11 @@ const ProsedurPeminjaman = () => {
           {user.role === "Mahasiswa" ? (
             <>
               <RoadmapStep number="1">Mahasiswa harus melakukan negosiasi terlebih dahulu melalui UPK.</RoadmapStep>
-              <RoadmapStep number="2">Mahasiswa harus melakukan perizinan dari BAAK untuk peminjaman kelas di jam perkuliahan.</RoadmapStep>
+              <RoadmapStep number="2">Peminjaman ruang Kelas, harus di luar jam perkuliahan.</RoadmapStep>
+              <RoadmapStep number="3">Mahasiswa harus melakukan perizinan dari BAAK untuk peminjaman kelas di jam perkuliahan.</RoadmapStep>
               <RoadmapStep number="3">Setelah disetujui oleh UPK, isi formulir peminjaman dan unggah bukti persetujuan.</RoadmapStep>
               <RoadmapStep number="4">Peminjaman harus diajukan maksimal H-1 sebelum kegiatan.</RoadmapStep>
-              <RoadmapStep number="5">Peminjaman hanya berlaku sampai pukul 18.00 WIB.</RoadmapStep>
-              <RoadmapStep number="6">Untuk peminjaman ruangan, harus di luar jam perkuliahan.</RoadmapStep>
+              <RoadmapStep number="2">Peminjaman hanya berlaku sampai pukul 18.00 WIB.</RoadmapStep>
             </>
           ) : (
             <>

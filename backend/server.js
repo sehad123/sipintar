@@ -9,13 +9,19 @@ const kategoriBarangRoutes = require("./routes/kategoriBarangRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Ganti dengan URL frontend Anda
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Use the routes
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", userRoutes);
+
 app.use("/api", barangRoutes);
 app.use("/api", peminjamanRoutes);
 app.use("/api", kategoriBarangRoutes); // Tambahkan route pengaduan
